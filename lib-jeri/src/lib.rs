@@ -1,3 +1,4 @@
+pub mod color;
 pub mod renderer;
 
 #[derive(Copy, Clone, PartialEq, Eq)]

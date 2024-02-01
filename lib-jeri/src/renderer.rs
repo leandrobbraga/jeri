@@ -1,29 +1,10 @@
-use crate::{Position, Size};
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Color {
-    Black,
-    White,
-}
+use crate::{color::Color, Position, Size};
 
 #[derive(PartialEq, Eq)]
 pub struct Screen {
     size: Size,
     buffer: Vec<Color>,
     background_color: Color,
-}
-
-impl std::fmt::Debug for Color {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Color::Black => '.',
-                Color::White => 'W',
-            }
-        )
-    }
 }
 
 impl std::fmt::Debug for Screen {
@@ -59,7 +40,7 @@ impl Default for Screen {
 }
 
 impl Screen {
-    const DEFAULT_BACKGROUND_COLOR: Color = Color::Black;
+    const DEFAULT_BACKGROUND_COLOR: Color = Color::BLACK;
     const DEFAULT_SCREEN_WIDTH: i32 = 640;
     const DEFAULT_SCREEN_HEIGHT: i32 = 480;
 
@@ -86,7 +67,7 @@ impl Screen {
             .resize((width * height) as usize, self.background_color)
     }
 
-    fn clear_buffer(&mut self) {
+    pub fn clear_buffer(&mut self) {
         self.buffer.fill(self.background_color);
     }
 
@@ -155,8 +136,8 @@ mod test {
     use super::*;
 
     macro_rules! buffer {
-        (.) => {Color::Black};
-        (W) => {Color::White};
+        (.) => {Color::BLACK};
+        (W) => {Color::WHITE};
         ($($s:tt)+) => {
             [$(buffer!($s)),+]
         };
@@ -186,7 +167,7 @@ mod test {
         let circle = Circle {
             center: Position { x: 4, y: 4 },
             radius: 2,
-            color: Color::White,
+            color: Color::WHITE,
         };
 
         screen.render(&[circle]);
@@ -219,7 +200,7 @@ mod test {
                 width: 3,
                 height: 3,
             },
-            color: Color::White,
+            color: Color::WHITE,
         };
 
         screen.render(&[rectangle]);
@@ -252,13 +233,13 @@ mod test {
                 width: 3,
                 height: 3,
             },
-            color: Color::White,
+            color: Color::WHITE,
         };
 
         let circle = Circle {
             center: Position { x: 7, y: 7 },
             radius: 3,
-            color: Color::White,
+            color: Color::WHITE,
         };
 
         screen.render(&[rectangle]);
@@ -286,7 +267,7 @@ mod test {
     }
 
     #[test]
-    fn clear_buffer() {
+    pub fn clear_buffer() {
         let mut screen = Screen::with_size(Size {
             width: 10,
             height: 10,
@@ -298,7 +279,7 @@ mod test {
                 width: 3,
                 height: 3,
             },
-            color: Color::White,
+            color: Color::WHITE,
         };
 
         screen.render(&[rectangle]);
