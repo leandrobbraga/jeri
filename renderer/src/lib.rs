@@ -1,42 +1,36 @@
-use crate::{color::Color, Position, Size};
+pub mod color;
+pub mod entities;
+
+use std::fmt::Debug;
+
+use crate::color::Color;
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct Size {
+    width: i32,
+    height: i32,
+}
+
+impl Size {
+    fn position_to_index(&self, position: &Position) -> usize {
+        (position.y * self.width + position.x) as usize
+    }
+}
+
+pub struct Position {
+    x: i32,
+    y: i32,
+}
+
+pub trait Drawable {
+    fn draw(&self, buffer: &mut [Color], screen_size: &Size);
+}
 
 #[derive(PartialEq, Eq)]
 pub struct Screen {
     size: Size,
     buffer: Vec<Color>,
     background_color: Color,
-}
-
-impl std::fmt::Debug for Screen {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for chunk in self.buffer.chunks_exact(self.size.width as usize) {
-            for color in chunk {
-                write!(f, "{:?}", color)?
-            }
-            writeln!(f)?
-        }
-
-        Ok(())
-    }
-}
-
-impl Default for Screen {
-    fn default() -> Self {
-        let buffer_size = Screen::DEFAULT_SCREEN_WIDTH * Screen::DEFAULT_SCREEN_HEIGHT;
-
-        let mut screen = Screen {
-            size: Size {
-                width: Screen::DEFAULT_SCREEN_WIDTH,
-                height: Screen::DEFAULT_SCREEN_HEIGHT,
-            },
-            buffer: Vec::with_capacity(buffer_size as usize),
-            background_color: Screen::DEFAULT_BACKGROUND_COLOR,
-        };
-
-        screen.resize(Screen::DEFAULT_SCREEN_WIDTH, Screen::DEFAULT_SCREEN_HEIGHT);
-
-        screen
-    }
 }
 
 impl Screen {
@@ -78,61 +72,42 @@ impl Screen {
     }
 }
 
-pub trait Drawable {
-    fn draw(&self, buffer: &mut [Color], screen_size: &Size);
-}
+impl Debug for Screen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for chunk in self.buffer.chunks_exact(self.size.width as usize) {
+            for color in chunk {
+                write!(f, "{:?}", color)?
+            }
+            writeln!(f)?
+        }
 
-fn position_to_index(position: &Position, screen_size: &Size) -> usize {
-    (position.y * screen_size.width + position.x) as usize
-}
-
-pub struct Rectangle {
-    center: Position,
-    size: Size,
-    color: Color,
-}
-
-pub struct Circle {
-    center: Position,
-    radius: i32,
-    color: Color,
-}
-
-impl Circle {
-    fn within_bound(&self, position: &Position) -> bool {
-        (position.x - self.center.x) * (position.x - self.center.x)
-            + (position.y - self.center.y) * (position.y - self.center.y)
-            <= self.radius * self.radius
+        Ok(())
     }
 }
 
-impl Drawable for Rectangle {
-    fn draw(&self, buffer: &mut [Color], screen_size: &Size) {
-        for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
-            for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
-                buffer[position_to_index(&Position { x, y }, &screen_size)] = self.color
-            }
-        }
-    }
-}
+impl Default for Screen {
+    fn default() -> Self {
+        let buffer_size = Screen::DEFAULT_SCREEN_WIDTH * Screen::DEFAULT_SCREEN_HEIGHT;
 
-impl Drawable for Circle {
-    fn draw(&self, buffer: &mut [Color], screen_size: &Size) {
-        // The loops reduce the "search area" to a square that inscribes the circle
-        for x in self.center.x - self.radius..=self.center.x + self.radius {
-            for y in self.center.y - self.radius..=self.center.y + self.radius {
-                let position = Position { x, y };
+        let mut screen = Screen {
+            size: Size {
+                width: Screen::DEFAULT_SCREEN_WIDTH,
+                height: Screen::DEFAULT_SCREEN_HEIGHT,
+            },
+            buffer: Vec::with_capacity(buffer_size as usize),
+            background_color: Screen::DEFAULT_BACKGROUND_COLOR,
+        };
 
-                if self.within_bound(&position) {
-                    buffer[position_to_index(&position, &screen_size)] = self.color
-                }
-            }
-        }
+        screen.resize(Screen::DEFAULT_SCREEN_WIDTH, Screen::DEFAULT_SCREEN_HEIGHT);
+
+        screen
     }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::entities::{Circle, Rectangle};
+
     use super::*;
 
     macro_rules! buffer {
