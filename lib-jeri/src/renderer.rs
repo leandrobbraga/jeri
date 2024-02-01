@@ -91,8 +91,6 @@ impl Screen {
     }
 
     pub fn render(&mut self, objects: &[impl Drawable]) {
-        self.clear_buffer();
-
         for object in objects {
             object.draw(self.buffer.as_mut_slice(), &self.size)
         }
@@ -227,6 +225,97 @@ mod test {
             . . . . . . . . .
             . . . . . . . . .
             . . . . . . . . .
+        ];
+        let expected_screen = Screen {
+            size: screen.size,
+            buffer: expected_buffer.to_vec(),
+            background_color: screen.background_color,
+        };
+
+        assert_eq!(screen, expected_screen)
+    }
+
+    #[test]
+    fn draw_two_objects() {
+        let mut screen = Screen::with_size(Size {
+            width: 15,
+            height: 15,
+        });
+
+        let rectangle = Rectangle {
+            center: Position { x: 5, y: 5 },
+            size: Size {
+                width: 3,
+                height: 3,
+            },
+            color: Color::White,
+        };
+
+        let circle = Circle {
+            center: Position { x: 8, y: 8 },
+            radius: 3,
+            color: Color::White,
+        };
+
+        screen.render(&[rectangle]);
+        screen.render(&[circle]);
+
+        let expected_buffer = buffer![
+            . . . . . . . . . . . . . . .
+            . . . . . . . . . . . . . . .
+            . . . . . . . . . . . . . . .
+            . . . W W W . . . . . . . . .
+            . . . W W W . W . . . . . . .
+            . . . W W W W W W W . . . . .
+            . . . . . W W W W W . . . . .
+            . . . . W W W W W W W . . . .
+            . . . . . W W W W W . . . . .
+            . . . . . W W W W W . . . . .
+            . . . . . . . W . . . . . . .
+            . . . . . . . . . . . . . . .
+            . . . . . . . . . . . . . . .
+            . . . . . . . . . . . . . . .
+            . . . . . . . . . . . . . . .
+        ];
+        let expected_screen = Screen {
+            size: screen.size,
+            buffer: expected_buffer.to_vec(),
+            background_color: screen.background_color,
+        };
+
+        assert_eq!(screen, expected_screen)
+    }
+
+    #[test]
+    fn clear_buffer() {
+        let mut screen = Screen::with_size(Size {
+            width: 10,
+            height: 10,
+        });
+
+        let rectangle = Rectangle {
+            center: Position { x: 5, y: 5 },
+            size: Size {
+                width: 3,
+                height: 3,
+            },
+            color: Color::White,
+        };
+
+        screen.render(&[rectangle]);
+        screen.clear_buffer();
+
+        let expected_buffer = buffer![
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
+            . . . . . . . . . .
         ];
         let expected_screen = Screen {
             size: screen.size,
