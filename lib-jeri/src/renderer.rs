@@ -162,6 +162,20 @@ mod test {
         };
     }
 
+    impl Screen {
+        fn assert_equal_buffers(&self, expected_buffer: &[Color]) {
+            assert_eq!(self.buffer.len(), expected_buffer.len());
+
+            let expected_screen = Screen {
+                size: self.size,
+                buffer: expected_buffer.to_vec(),
+                background_color: self.background_color,
+            };
+
+            assert_eq!(self, &expected_screen);
+        }
+    }
+
     #[test]
     fn draw_circle() {
         let mut screen = Screen::with_size(Size {
@@ -188,13 +202,8 @@ mod test {
             . . . . . . . . .
             . . . . . . . . .
         ];
-        let expected_screen = Screen {
-            size: screen.size,
-            buffer: expected_buffer.to_vec(),
-            background_color: screen.background_color,
-        };
 
-        assert_eq!(screen, expected_screen)
+        screen.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
@@ -226,13 +235,8 @@ mod test {
             . . . . . . . . .
             . . . . . . . . .
         ];
-        let expected_screen = Screen {
-            size: screen.size,
-            buffer: expected_buffer.to_vec(),
-            background_color: screen.background_color,
-        };
 
-        assert_eq!(screen, expected_screen)
+        screen.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
@@ -277,13 +281,8 @@ mod test {
             . . . . . . . . . . . . . . .
             . . . . . . . . . . . . . . .
         ];
-        let expected_screen = Screen {
-            size: screen.size,
-            buffer: expected_buffer.to_vec(),
-            background_color: screen.background_color,
-        };
 
-        assert_eq!(screen, expected_screen)
+        screen.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
