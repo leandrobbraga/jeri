@@ -1,7 +1,7 @@
 pub mod color;
 pub mod entities;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, ops::Mul};
 
 use crate::color::Color;
 
@@ -17,6 +17,17 @@ impl Size {
     }
 }
 
+impl Mul<i32> for Size {
+    type Output = Size;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Size {
+            width: self.width * rhs,
+            height: self.height * rhs,
+        }
+    }
+}
+
 pub struct Position {
     x: i32,
     y: i32,
@@ -24,6 +35,8 @@ pub struct Position {
 
 pub trait Drawable {
     fn draw(&self, buffer: &mut [Color], screen_size: &Size);
+
+    fn color_at(&self, position: &Position) -> Option<Color>;
 }
 
 #[derive(PartialEq, Eq)]

@@ -12,21 +12,21 @@ pub struct Circle {
     pub color: Color,
 }
 
-impl Circle {
-    fn within_bound(&self, position: &Position) -> bool {
-        (position.x - self.center.x) * (position.x - self.center.x)
-            + (position.y - self.center.y) * (position.y - self.center.y)
-            <= self.radius * self.radius
-    }
-}
-
 impl Drawable for Rectangle {
     fn draw(&self, buffer: &mut [Color], screen_size: &Size) {
         for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
-                buffer[screen_size.position_to_index(&Position { x, y })] = self.color
+                let position = Position { x, y };
+
+                if let Some(color) = self.color_at(&position) {
+                    buffer[screen_size.position_to_index(&position)] += color
+                }
             }
         }
+    }
+
+    fn color_at(&self, _: &Position) -> Option<Color> {
+        Some(self.color)
     }
 }
 
@@ -37,10 +37,65 @@ impl Drawable for Circle {
             for y in self.center.y - self.radius..=self.center.y + self.radius {
                 let position = Position { x, y };
 
-                if self.within_bound(&position) {
-                    buffer[screen_size.position_to_index(&position)] = self.color
+                if let Some(color) = self.color_at(&position) {
+                    buffer[screen_size.position_to_index(&position)] += color
                 }
             }
         }
+    }
+
+    #[cfg(not(feature = "anti-aliasing"))]
+    fn color_at(&self, pos: &Position) -> Option<Color> {
+        let dx = pos.x - self.center.x;
+        let dy = pos.y - self.center.y;
+
+        if dx * dx + dy * dy > self.radius * self.radius {
+            return None;
+        }
+
+        Some(self.color)
+    }
+
+    /// Defines which color should go to the desired position.
+    ///
+    /// This algorithm performs anti-aliasing by upscaling the resolution and then calculating how
+    /// many subpixels in each pixel are within bounds of the circle. The calculation is obscured by
+    /// a float to integer transformation.
+    ///
+    /// Reference: https://www.youtube.com/watch?v=SoaXLQh3UQo by Tsoding
+    #[cfg(feature = "anti-aliasing")]
+    fn color_at(&self, pos: &Position) -> Option<Color> {
+        let aa = 2;
+        let w = aa + 1;
+
+        let mut subpixel_count = 0;
+
+        for sx in 0..aa {
+            for sy in 0..aa {
+                // We cast everything to i64 to avoid overflowing
+                let x = pos.x as i64;
+                let y = pos.y as i64;
+                let cx = self.center.x as i64;
+                let cy = self.center.y as i64;
+                let r = self.radius as i64;
+
+                let dx = 2 * (w * (x - cx) + sx + 1) - w;
+                let dy = 2 * (w * (y - cy) + sy + 1) - w;
+
+                let sr = 2 * w * r;
+
+                if dx * dx + dy * dy <= sr * sr {
+                    subpixel_count += 1;
+                }
+            }
+        }
+
+        if subpixel_count == 0 {
+            return None;
+        }
+
+        let alpha = (self.color.a as i64 * subpixel_count / (aa * aa)) as u8;
+
+        Some(self.color.with_alpha(alpha))
     }
 }
