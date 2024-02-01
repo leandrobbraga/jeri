@@ -102,7 +102,7 @@ pub trait Drawable {
 }
 
 fn position_to_index(position: &Position, screen_size: &Size) -> usize {
-    ((position.y - 1) * screen_size.width + (position.x - 1)) as usize
+    (position.y * screen_size.width + position.x) as usize
 }
 
 pub struct Rectangle {
@@ -184,7 +184,7 @@ mod test {
         });
 
         let circle = Circle {
-            center: Position { x: 5, y: 5 },
+            center: Position { x: 4, y: 4 },
             radius: 2,
             color: Color::White,
         };
@@ -214,7 +214,7 @@ mod test {
         });
 
         let rectangle = Rectangle {
-            center: Position { x: 5, y: 5 },
+            center: Position { x: 4, y: 4 },
             size: Size {
                 width: 3,
                 height: 3,
@@ -247,7 +247,7 @@ mod test {
         });
 
         let rectangle = Rectangle {
-            center: Position { x: 5, y: 5 },
+            center: Position { x: 4, y: 4 },
             size: Size {
                 width: 3,
                 height: 3,
@@ -256,7 +256,7 @@ mod test {
         };
 
         let circle = Circle {
-            center: Position { x: 8, y: 8 },
+            center: Position { x: 7, y: 7 },
             radius: 3,
             color: Color::White,
         };
@@ -293,7 +293,7 @@ mod test {
         });
 
         let rectangle = Rectangle {
-            center: Position { x: 5, y: 5 },
+            center: Position { x: 4, y: 4 },
             size: Size {
                 width: 3,
                 height: 3,
