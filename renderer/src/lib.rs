@@ -119,7 +119,7 @@ impl Default for Screen {
 
 #[cfg(test)]
 mod test {
-    use crate::entities::{Circle, Rectangle};
+    use crate::entities::{Circle, Line, Rectangle};
 
     use super::*;
 
@@ -168,6 +168,36 @@ mod test {
             . . W W W W W . .
             . . . W W W . . .
             . . . . W . . . .
+            . . . . . . . . .
+            . . . . . . . . .
+        ];
+
+        screen.assert_equal_buffers(&expected_buffer);
+    }
+
+    #[test]
+    fn draw_line() {
+        let mut screen = Screen::with_size(Size {
+            width: 9,
+            height: 9,
+        });
+
+        let circle = Line {
+            end: Position { x: 5, y: 2 },
+            start: Position { x: 1, y: 5 },
+            color: Color::WHITE,
+        };
+
+        screen.render(&[circle]);
+
+        let expected_buffer = buffer![
+            . . . . . . . . .
+            . . . . . . . . .
+            . . . . . W . . .
+            . . . . W . . . .
+            . . W W . . . . .
+            . W . . . . . . .
+            . . . . . . . . .
             . . . . . . . . .
             . . . . . . . . .
         ];

@@ -12,7 +12,15 @@ pub struct Circle {
     pub color: Color,
 }
 
+pub struct Line {
+    pub start: Position,
+    pub end: Position,
+    pub color: Color,
+}
+
 impl Drawable for Rectangle {
+    // TODO: add rotation
+    // TODO: add anti-aliasing
     fn draw(&self, buffer: &mut [Color], screen_size: &Size) {
         for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
@@ -97,5 +105,28 @@ impl Drawable for Circle {
         let alpha = (self.color.a as i64 * subpixel_count / (aa * aa)) as u8;
 
         Some(self.color.with_alpha(alpha))
+    }
+}
+
+impl Drawable for Line {
+    // TODO: Add Anti-aliasing
+    // TODO: Add width
+    fn draw(&self, buffer: &mut [Color], screen_size: &Size) {
+        // The line equation is 'y = slope*x + intercept'
+        let slope = (self.start.y - self.end.y) as f64 / (self.start.x - self.end.x) as f64;
+        let intercept = self.start.y as f64 - self.start.x as f64 * slope;
+
+        for x in self.start.x..=self.end.x {
+            let position = Position {
+                x,
+                y: f64::round(slope * x as f64 + intercept) as i32,
+            };
+            buffer[screen_size.position_to_index(&position)] =
+                unsafe { self.color_at(&position).unwrap_unchecked() };
+        }
+    }
+
+    fn color_at(&self, _: &Position) -> Option<Color> {
+        Some(self.color)
     }
 }
