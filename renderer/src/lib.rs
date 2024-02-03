@@ -123,6 +123,15 @@ mod test {
 
     use super::*;
 
+    // TODO: Evolve the tests from macros to expectations.
+    //
+    //       With expectations, everytime the developer run the tests, the program generates a
+    //       file which is compared to the previously approved expectation. If the difference is
+    //       desirable the developer can approve it as the new expectation, otherwise they can keep
+    //       working to meet the expectation.
+    //
+    //       This way is much easier to evolve the renderer, specially subtle things like
+    //       anti-aliasing
     macro_rules! buffer {
         (.) => {Color::BLACK};
         (W) => {Color::WHITE};
