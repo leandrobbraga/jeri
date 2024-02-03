@@ -34,35 +34,35 @@ pub struct Position {
 }
 
 pub trait Drawable {
-    fn draw(&self, buffer: &mut [Color], screen_size: &Size);
+    fn draw(&self, buffer: &mut [Color], canvas_size: &Size);
 
     fn color_at(&self, position: &Position) -> Option<Color>;
 }
 
 #[derive(PartialEq, Eq)]
-pub struct Screen {
+pub struct Canvas {
     size: Size,
     buffer: Vec<Color>,
     background_color: Color,
 }
 
-impl Screen {
+impl Canvas {
     const DEFAULT_BACKGROUND_COLOR: Color = Color::BLACK;
-    const DEFAULT_SCREEN_WIDTH: i32 = 640;
-    const DEFAULT_SCREEN_HEIGHT: i32 = 480;
+    const DEFAULT_CANVAS_WIDTH: i32 = 640;
+    const DEFAULT_CANVAS_HEIGHT: i32 = 480;
 
     pub fn with_size(size: Size) -> Self {
         let buffer_size = size.width * size.height;
 
-        let mut screen = Screen {
+        let mut canvas = Canvas {
             size,
             buffer: Vec::with_capacity(buffer_size as usize),
-            background_color: Screen::DEFAULT_BACKGROUND_COLOR,
+            background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
         };
 
-        screen.resize(size.width, size.height);
+        canvas.resize(size.width, size.height);
 
-        screen
+        canvas
     }
 
     pub fn set_background_color(&mut self, color: Color) {
@@ -85,7 +85,7 @@ impl Screen {
     }
 }
 
-impl Debug for Screen {
+impl Debug for Canvas {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for chunk in self.buffer.chunks_exact(self.size.width as usize) {
             for color in chunk {
@@ -98,22 +98,22 @@ impl Debug for Screen {
     }
 }
 
-impl Default for Screen {
+impl Default for Canvas {
     fn default() -> Self {
-        let buffer_size = Screen::DEFAULT_SCREEN_WIDTH * Screen::DEFAULT_SCREEN_HEIGHT;
+        let buffer_size = Canvas::DEFAULT_CANVAS_WIDTH * Canvas::DEFAULT_CANVAS_HEIGHT;
 
-        let mut screen = Screen {
+        let mut canvas = Canvas {
             size: Size {
-                width: Screen::DEFAULT_SCREEN_WIDTH,
-                height: Screen::DEFAULT_SCREEN_HEIGHT,
+                width: Canvas::DEFAULT_CANVAS_WIDTH,
+                height: Canvas::DEFAULT_CANVAS_HEIGHT,
             },
             buffer: Vec::with_capacity(buffer_size as usize),
-            background_color: Screen::DEFAULT_BACKGROUND_COLOR,
+            background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
         };
 
-        screen.resize(Screen::DEFAULT_SCREEN_WIDTH, Screen::DEFAULT_SCREEN_HEIGHT);
+        canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
 
-        screen
+        canvas
     }
 }
 
@@ -140,23 +140,23 @@ mod test {
         };
     }
 
-    impl Screen {
+    impl Canvas {
         fn assert_equal_buffers(&self, expected_buffer: &[Color]) {
             assert_eq!(self.buffer.len(), expected_buffer.len());
 
-            let expected_screen = Screen {
+            let expected_canvas = Canvas {
                 size: self.size,
                 buffer: expected_buffer.to_vec(),
                 background_color: self.background_color,
             };
 
-            assert_eq!(self, &expected_screen);
+            assert_eq!(self, &expected_canvas);
         }
     }
 
     #[test]
     fn draw_circle() {
-        let mut screen = Screen::with_size(Size {
+        let mut canvas = Canvas::with_size(Size {
             width: 9,
             height: 9,
         });
@@ -167,7 +167,7 @@ mod test {
             color: Color::WHITE,
         };
 
-        screen.render(&[circle]);
+        canvas.render(&[circle]);
 
         let expected_buffer = buffer![
             . . . . . . . . .
@@ -181,12 +181,12 @@ mod test {
             . . . . . . . . .
         ];
 
-        screen.assert_equal_buffers(&expected_buffer);
+        canvas.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
     fn draw_line() {
-        let mut screen = Screen::with_size(Size {
+        let mut canvas = Canvas::with_size(Size {
             width: 9,
             height: 9,
         });
@@ -197,7 +197,7 @@ mod test {
             color: Color::WHITE,
         };
 
-        screen.render(&[circle]);
+        canvas.render(&[circle]);
 
         let expected_buffer = buffer![
             . . . . . . . . .
@@ -211,12 +211,12 @@ mod test {
             . . . . . . . . .
         ];
 
-        screen.assert_equal_buffers(&expected_buffer);
+        canvas.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
     fn draw_rectangle() {
-        let mut screen = Screen::with_size(Size {
+        let mut canvas = Canvas::with_size(Size {
             width: 9,
             height: 9,
         });
@@ -230,7 +230,7 @@ mod test {
             color: Color::WHITE,
         };
 
-        screen.render(&[rectangle]);
+        canvas.render(&[rectangle]);
 
         let expected_buffer = buffer![
             . . . . . . . . .
@@ -244,12 +244,12 @@ mod test {
             . . . . . . . . .
         ];
 
-        screen.assert_equal_buffers(&expected_buffer);
+        canvas.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
     fn draw_two_objects() {
-        let mut screen = Screen::with_size(Size {
+        let mut canvas = Canvas::with_size(Size {
             width: 15,
             height: 15,
         });
@@ -269,8 +269,8 @@ mod test {
             color: Color::WHITE,
         };
 
-        screen.render(&[rectangle]);
-        screen.render(&[circle]);
+        canvas.render(&[rectangle]);
+        canvas.render(&[circle]);
 
         let expected_buffer = buffer![
             . . . . . . . . . . . . . . .
@@ -290,12 +290,12 @@ mod test {
             . . . . . . . . . . . . . . .
         ];
 
-        screen.assert_equal_buffers(&expected_buffer);
+        canvas.assert_equal_buffers(&expected_buffer);
     }
 
     #[test]
     pub fn clear_buffer() {
-        let mut screen = Screen::with_size(Size {
+        let mut canvas = Canvas::with_size(Size {
             width: 10,
             height: 10,
         });
@@ -309,8 +309,8 @@ mod test {
             color: Color::WHITE,
         };
 
-        screen.render(&[rectangle]);
-        screen.clear_buffer();
+        canvas.render(&[rectangle]);
+        canvas.clear_buffer();
 
         let expected_buffer = buffer![
             . . . . . . . . . .
@@ -324,12 +324,7 @@ mod test {
             . . . . . . . . . .
             . . . . . . . . . .
         ];
-        let expected_screen = Screen {
-            size: screen.size,
-            buffer: expected_buffer.to_vec(),
-            background_color: screen.background_color,
-        };
 
-        assert_eq!(screen, expected_screen)
+        canvas.assert_equal_buffers(&expected_buffer);
     }
 }
