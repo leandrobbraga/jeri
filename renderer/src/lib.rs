@@ -7,11 +7,14 @@ use crate::color::Color;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct Size {
-    width: i32,
-    height: i32,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl Size {
+    pub fn new(height: i32, width: i32) -> Size {
+        Size { width, height }
+    }
     fn position_to_index(&self, position: &Position) -> usize {
         (position.y * self.width + position.x) as usize
     }
@@ -29,8 +32,14 @@ impl Mul<i32> for Size {
 }
 
 pub struct Position {
-    x: i32,
-    y: i32,
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Position {
+    pub fn new(x: i32, y: i32) -> Position {
+        Position { x, y }
+    }
 }
 
 pub trait Drawable {
@@ -43,7 +52,7 @@ pub trait Drawable {
 pub struct Canvas {
     size: Size,
     buffer: Vec<Color>,
-    background_color: Color,
+    pub background_color: Color,
 }
 
 impl Canvas {
@@ -65,10 +74,6 @@ impl Canvas {
         canvas
     }
 
-    pub fn set_background_color(&mut self, color: Color) {
-        self.background_color = color
-    }
-
     pub fn resize(&mut self, width: i32, height: i32) {
         self.buffer
             .resize((width * height) as usize, self.background_color)
@@ -82,6 +87,14 @@ impl Canvas {
         for object in objects {
             object.draw(self.buffer.as_mut_slice(), &self.size)
         }
+    }
+
+    pub fn size_ref(&self) -> &Size {
+        &self.size
+    }
+
+    pub fn buffer_ref(&self) -> &[Color] {
+        &self.buffer
     }
 }
 
@@ -114,217 +127,5 @@ impl Default for Canvas {
         canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
 
         canvas
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::entities::{Circle, Line, Rectangle};
-
-    use super::*;
-
-    // TODO: Evolve the tests from macros to expectations.
-    //
-    //       With expectations, everytime the developer run the tests, the program generates a
-    //       file which is compared to the previously approved expectation. If the difference is
-    //       desirable the developer can approve it as the new expectation, otherwise they can keep
-    //       working to meet the expectation.
-    //
-    //       This way is much easier to evolve the renderer, specially subtle things like
-    //       anti-aliasing
-    macro_rules! buffer {
-        (.) => {Color::BLACK};
-        (W) => {Color::WHITE};
-        ($($s:tt)+) => {
-            [$(buffer!($s)),+]
-        };
-    }
-
-    impl Canvas {
-        fn assert_equal_buffers(&self, expected_buffer: &[Color]) {
-            assert_eq!(self.buffer.len(), expected_buffer.len());
-
-            let expected_canvas = Canvas {
-                size: self.size,
-                buffer: expected_buffer.to_vec(),
-                background_color: self.background_color,
-            };
-
-            assert_eq!(self, &expected_canvas);
-        }
-    }
-
-    #[test]
-    fn draw_circle() {
-        let mut canvas = Canvas::with_size(Size {
-            width: 9,
-            height: 9,
-        });
-
-        let circle = Circle {
-            center: Position { x: 4, y: 4 },
-            radius: 2,
-            color: Color::WHITE,
-        };
-
-        canvas.render(&[circle]);
-
-        let expected_buffer = buffer![
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . W . . . .
-            . . . W W W . . .
-            . . W W W W W . .
-            . . . W W W . . .
-            . . . . W . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        ];
-
-        canvas.assert_equal_buffers(&expected_buffer);
-    }
-
-    #[test]
-    fn draw_line() {
-        let mut canvas = Canvas::with_size(Size {
-            width: 9,
-            height: 9,
-        });
-
-        let circle = Line {
-            end: Position { x: 5, y: 2 },
-            start: Position { x: 1, y: 5 },
-            color: Color::WHITE,
-        };
-
-        canvas.render(&[circle]);
-
-        let expected_buffer = buffer![
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . W . . .
-            . . . . W . . . .
-            . . W W . . . . .
-            . W . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        ];
-
-        canvas.assert_equal_buffers(&expected_buffer);
-    }
-
-    #[test]
-    fn draw_rectangle() {
-        let mut canvas = Canvas::with_size(Size {
-            width: 9,
-            height: 9,
-        });
-
-        let rectangle = Rectangle {
-            center: Position { x: 4, y: 4 },
-            size: Size {
-                width: 3,
-                height: 3,
-            },
-            color: Color::WHITE,
-        };
-
-        canvas.render(&[rectangle]);
-
-        let expected_buffer = buffer![
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . W W W . . .
-            . . . W W W . . .
-            . . . W W W . . .
-            . . . . . . . . .
-            . . . . . . . . .
-            . . . . . . . . .
-        ];
-
-        canvas.assert_equal_buffers(&expected_buffer);
-    }
-
-    #[test]
-    fn draw_two_objects() {
-        let mut canvas = Canvas::with_size(Size {
-            width: 15,
-            height: 15,
-        });
-
-        let rectangle = Rectangle {
-            center: Position { x: 4, y: 4 },
-            size: Size {
-                width: 3,
-                height: 3,
-            },
-            color: Color::WHITE,
-        };
-
-        let circle = Circle {
-            center: Position { x: 7, y: 7 },
-            radius: 3,
-            color: Color::WHITE,
-        };
-
-        canvas.render(&[rectangle]);
-        canvas.render(&[circle]);
-
-        let expected_buffer = buffer![
-            . . . . . . . . . . . . . . .
-            . . . . . . . . . . . . . . .
-            . . . . . . . . . . . . . . .
-            . . . W W W . . . . . . . . .
-            . . . W W W . W . . . . . . .
-            . . . W W W W W W W . . . . .
-            . . . . . W W W W W . . . . .
-            . . . . W W W W W W W . . . .
-            . . . . . W W W W W . . . . .
-            . . . . . W W W W W . . . . .
-            . . . . . . . W . . . . . . .
-            . . . . . . . . . . . . . . .
-            . . . . . . . . . . . . . . .
-            . . . . . . . . . . . . . . .
-            . . . . . . . . . . . . . . .
-        ];
-
-        canvas.assert_equal_buffers(&expected_buffer);
-    }
-
-    #[test]
-    pub fn clear_buffer() {
-        let mut canvas = Canvas::with_size(Size {
-            width: 10,
-            height: 10,
-        });
-
-        let rectangle = Rectangle {
-            center: Position { x: 4, y: 4 },
-            size: Size {
-                width: 3,
-                height: 3,
-            },
-            color: Color::WHITE,
-        };
-
-        canvas.render(&[rectangle]);
-        canvas.clear_buffer();
-
-        let expected_buffer = buffer![
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-            . . . . . . . . . .
-        ];
-
-        canvas.assert_equal_buffers(&expected_buffer);
     }
 }
