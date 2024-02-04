@@ -45,8 +45,6 @@ impl Position {
 
 pub trait Drawable {
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size);
-
-    fn color_at(&self, position: &Position) -> Option<Color>;
 }
 
 #[derive(PartialEq, Eq)]

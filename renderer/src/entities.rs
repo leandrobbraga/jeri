@@ -27,44 +27,13 @@ impl Drawable for Rectangle {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
                 let position = Position { x, y };
 
-                if let Some(color) = self.color_at(&position) {
-                    buffer[canvas_size.position_to_index(&position)] += color
-                }
+                buffer[canvas_size.position_to_index(&position)] += self.color
             }
         }
-    }
-
-    fn color_at(&self, _: &Position) -> Option<Color> {
-        Some(self.color)
     }
 }
 
-impl Drawable for Circle {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
-        // The loops reduce the "search area" to a square that inscribes the circle
-        for x in self.center.x - self.radius..=self.center.x + self.radius {
-            for y in self.center.y - self.radius..=self.center.y + self.radius {
-                let position = Position { x, y };
-
-                if let Some(color) = self.color_at(&position) {
-                    buffer[canvas_size.position_to_index(&position)] += color
-                }
-            }
-        }
-    }
-
-    #[cfg(not(feature = "anti-aliasing"))]
-    fn color_at(&self, pos: &Position) -> Option<Color> {
-        let dx = pos.x - self.center.x;
-        let dy = pos.y - self.center.y;
-
-        if dx * dx + dy * dy > self.radius * self.radius {
-            return None;
-        }
-
-        Some(self.color)
-    }
-
+impl Circle {
     /// Defines which color should go to the desired position.
     ///
     /// This algorithm performs anti-aliasing by upscaling the resolution and then calculating how
@@ -72,7 +41,6 @@ impl Drawable for Circle {
     /// a float to integer transformation.
     ///
     /// Reference: https://www.youtube.com/watch?v=SoaXLQh3UQo by Tsoding
-    #[cfg(feature = "anti-aliasing")]
     fn color_at(&self, pos: &Position) -> Option<Color> {
         let aa = 2;
         let w = aa + 1;
@@ -109,6 +77,21 @@ impl Drawable for Circle {
     }
 }
 
+impl Drawable for Circle {
+    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+        // The loops reduce the "search area" to a square that inscribes the circle
+        for x in self.center.x - self.radius..=self.center.x + self.radius {
+            for y in self.center.y - self.radius..=self.center.y + self.radius {
+                let position = Position { x, y };
+
+                if let Some(color) = self.color_at(&position) {
+                    buffer[canvas_size.position_to_index(&position)] += color
+                }
+            }
+        }
+    }
+}
+
 impl Drawable for Line {
     // TODO: Add Anti-aliasing
     // TODO: Add width
@@ -126,13 +109,8 @@ impl Drawable for Line {
             for offset in -self.width..=self.width {
                 let position = Position { x, y: y + offset };
 
-                buffer[canvas_size.position_to_index(&position)] =
-                    unsafe { self.color_at(&position).unwrap_unchecked() }
+                buffer[canvas_size.position_to_index(&position)] = self.color
             }
         }
-    }
-
-    fn color_at(&self, _: &Position) -> Option<Color> {
-        Some(self.color)
     }
 }

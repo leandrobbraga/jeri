@@ -9,6 +9,3 @@ edition = "2021"
 
 [dev-dependencies]
 png = "0.17.11"
-
-[features]
-anti-aliasing = []
