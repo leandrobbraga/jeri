@@ -1,5 +1,8 @@
 use crate::{color::Color, Drawable, Position, Size};
 
+// TODO: Add triangle
+// TODO: Add text
+
 pub struct Rectangle {
     pub center: Position,
     pub size: Size,
@@ -20,8 +23,6 @@ pub struct Line {
 }
 
 impl Drawable for Rectangle {
-    // TODO: add rotation
-    // TODO: add anti-aliasing
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
         for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
@@ -40,7 +41,10 @@ impl Circle {
     /// many subpixels in each pixel are within bounds of the circle. The calculation is obscured by
     /// a float to integer transformation.
     ///
-    /// Reference: https://www.youtube.com/watch?v=SoaXLQh3UQo by Tsoding
+    /// This algorithm was heavily inspired by Tsoding's work in 'olive.c'
+    /// <https://github.com/tsoding/olive.c/blob/master/olive.c#L524-L548>.
+    /// See the video <https://www.youtube.com/watch?v=SoaXLQh3UQo> to understand how it was
+    /// developed.
     fn color_at(&self, pos: &Position) -> Option<Color> {
         let aa = 2;
         let w = aa + 1;
