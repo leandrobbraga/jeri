@@ -16,6 +16,7 @@ pub struct Line {
     pub start: Position,
     pub end: Position,
     pub color: Color,
+    pub width: i32,
 }
 
 impl Drawable for Rectangle {
@@ -116,13 +117,18 @@ impl Drawable for Line {
         let slope = (self.start.y - self.end.y) as f64 / (self.start.x - self.end.x) as f64;
         let intercept = self.start.y as f64 - self.start.x as f64 * slope;
 
-        for x in self.start.x..=self.end.x {
-            let position = Position {
-                x,
-                y: f64::round(slope * x as f64 + intercept) as i32,
-            };
-            buffer[canvas_size.position_to_index(&position)] =
-                unsafe { self.color_at(&position).unwrap_unchecked() };
+        let start = self.start.x.min(self.end.x);
+        let end = self.start.x.max(self.end.x);
+
+        for x in start..=end {
+            let y = f64::round(slope * x as f64 + intercept) as i32;
+
+            for offset in -self.width..=self.width {
+                let position = Position { x, y: y + offset };
+
+                buffer[canvas_size.position_to_index(&position)] =
+                    unsafe { self.color_at(&position).unwrap_unchecked() }
+            }
         }
     }
 

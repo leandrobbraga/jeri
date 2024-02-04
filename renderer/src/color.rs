@@ -1,4 +1,8 @@
-use std::{cmp::min, fmt::Debug, ops::AddAssign};
+use std::{
+    cmp::min,
+    fmt::Debug,
+    ops::{Add, AddAssign},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Color {
@@ -15,6 +19,8 @@ impl Color {
     pub const RED: Color = Color::from_rgba_u32(0xFF0000FF);
     pub const GREEN: Color = Color::from_rgba_u32(0x00FF00FF);
     pub const BLUE: Color = Color::from_rgba_u32(0x0000FFFF);
+    pub const LIGHT_PINK: Color = Color::from_rgba_u32(0xFFC0CBFF);
+    pub const BRIGHT_PINK: Color = Color::from_rgba_u32(0xFC0FC0FF);
 
     pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Color { r, g, b, a }
@@ -45,7 +51,7 @@ impl Color {
             | ((self.a as u32) << 0 as u32)
     }
 
-    pub fn with_alpha(&self, alpha: u8) -> Color {
+    pub const fn with_alpha(&self, alpha: u8) -> Color {
         Color {
             r: self.r,
             g: self.g,
@@ -65,6 +71,23 @@ impl AddAssign<Color> for Color {
         self.r = min(255, r) as u8;
         self.g = min(255, g) as u8;
         self.b = min(255, b) as u8;
+    }
+}
+
+impl Add<Color> for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Color) -> Self::Output {
+        let r = (self.r as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
+        let g = (self.g as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
+        let b = (self.b as u32 * (255 - rhs.a as u32) + rhs.b as u32 * rhs.a as u32) / 255;
+
+        Color {
+            r: min(255, r) as u8,
+            g: min(255, g) as u8,
+            b: min(255, b) as u8,
+            a: self.a,
+        }
     }
 }
 
