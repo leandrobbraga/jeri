@@ -141,14 +141,32 @@ fn line() {
         height: 100,
     });
 
-    let line = Line {
+    let line_1 = Line {
         end: Position { x: 0, y: 20 },
         start: Position { x: 25, y: 85 },
         color: Color::WHITE,
         width: 2,
     };
+    let line_2 = Line {
+        end: Position { x: 70, y: 20 },
+        start: Position { x: 73, y: 85 },
+        color: Color::WHITE,
+        width: 2,
+    };
+    let vertical_line = Line {
+        end: Position { x: 35, y: 30 },
+        start: Position { x: 35, y: 10 },
+        color: Color::WHITE,
+        width: 2,
+    };
+    let horizontal_line = Line {
+        end: Position { x: 10, y: 70 },
+        start: Position { x: 40, y: 70 },
+        color: Color::WHITE,
+        width: 2,
+    };
 
-    canvas.render(&[line]);
+    canvas.render(&[line_1, line_2, vertical_line, horizontal_line]);
 
     evaluate_test_case(&canvas, "line")
 }

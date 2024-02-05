@@ -2,6 +2,7 @@ use crate::{color::Color, Drawable, Position, Size};
 
 // TODO: Add triangle
 // TODO: Add text
+// TODO: Deal with entities that fall completely or partially outside the canvas
 
 pub struct Rectangle {
     pub center: Position,
@@ -98,22 +99,47 @@ impl Drawable for Circle {
 
 impl Drawable for Line {
     // TODO: Add Anti-aliasing
-    // TODO: Add width
+    // TODO: Render width better, currently we only add width horizontally or vertically, but we
+    //       should add it in the normal direction of the line.
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
-        // The line equation is 'y = slope*x + intercept'
-        let slope = (self.start.y - self.end.y) as f64 / (self.start.x - self.end.x) as f64;
-        let intercept = self.start.y as f64 - self.start.x as f64 * slope;
+        let dx = self.start.x - self.end.x;
+        let dy = self.start.y - self.end.y;
 
-        let start = self.start.x.min(self.end.x);
-        let end = self.start.x.max(self.end.x);
+        // We render in the longest direction to have a better resolution, since the amount of steps
+        // is determined by one chosen axis.
+        if i32::abs(dx) >= i32::abs(dy) {
+            // The line equation is 'y = slope*x + intercept'
+            let slope = dy as f64 / dx as f64;
+            let intercept = self.start.y as f64 - self.start.x as f64 * slope;
 
-        for x in start..=end {
-            let y = f64::round(slope * x as f64 + intercept) as i32;
+            let start = self.start.x.min(self.end.x);
+            let end = self.start.x.max(self.end.x);
 
-            for offset in -self.width..=self.width {
-                let position = Position { x, y: y + offset };
+            for x in start..=end {
+                let y = f64::round(slope * x as f64 + intercept) as i32;
 
-                buffer[canvas_size.position_to_index(&position)] = self.color
+                for offset in -self.width..=self.width {
+                    let position = Position { x, y: y + offset };
+
+                    buffer[canvas_size.position_to_index(&position)] = self.color
+                }
+            }
+        } else {
+            // The line equation is 'x = slope*y + intercept'
+            let slope = dx as f64 / dy as f64;
+            let intercept = self.start.x as f64 - self.start.y as f64 * slope;
+
+            let start = self.start.y.min(self.end.y);
+            let end = self.start.y.max(self.end.y);
+
+            for y in start..=end {
+                let x = f64::round(slope * y as f64 + intercept) as i32;
+
+                for offset in -self.width..=self.width {
+                    let position = Position { x: x + offset, y };
+
+                    buffer[canvas_size.position_to_index(&position)] = self.color
+                }
             }
         }
     }
