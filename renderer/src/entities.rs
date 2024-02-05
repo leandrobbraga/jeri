@@ -220,20 +220,22 @@ impl Drawable for Triangle {
 }
 
 impl Triangle {
+    // NOTE: This technique obscures the calculation by upscaling the numbers to transform floats
+    //       into integers.
     fn color_at(&self, p: Position<i32>) -> Option<Color> {
         let aa = 2;
-        let pad = 1. / (aa as f64 + 1.);
+        let w = aa + 1;
 
         let mut subpixel_count = 0;
 
         for sxo in 1..=aa {
             for syo in 1..=aa {
                 let p = Position {
-                    x: p.x as f64 + pad * sxo as f64,
-                    y: p.y as f64 + pad * syo as f64,
+                    x: 2 * (w * p.x as i64 + sxo),
+                    y: 2 * (w * p.y as i64 + syo),
                 };
 
-                if self.is_point_inside(p) {
+                if self.is_point_inside(p, w) {
                     subpixel_count += 1;
                 }
             }
@@ -249,19 +251,18 @@ impl Triangle {
     }
     /// Check if a given point is inside the triangle.
     /// Reference: <https://math.stackexchange.com/a/51328>
-    fn is_point_inside(&self, p: Position<f64>) -> bool {
-        // We add 0.5 to calculate from the center of the pixel
+    fn is_point_inside(&self, p: Position<i64>, w: i64) -> bool {
         let p1 = Position {
-            x: self.p1.x as f64 + 0.5,
-            y: self.p1.y as f64 + 0.5,
+            x: w * (2 * self.p1.x as i64 + 1),
+            y: w * (2 * self.p1.y as i64 + 1),
         };
         let p2 = Position {
-            x: self.p2.x as f64 + 0.5,
-            y: self.p2.y as f64 + 0.5,
+            x: w * (2 * self.p2.x as i64 + 1),
+            y: w * (2 * self.p2.y as i64 + 1),
         };
         let p3 = Position {
-            x: self.p3.x as f64 + 0.5,
-            y: self.p3.y as f64 + 0.5,
+            x: w * (2 * self.p3.x as i64 + 1),
+            y: w * (2 * self.p3.y as i64 + 1),
         };
         let ab = p1 - p2;
         let ap = p1 - p;
@@ -276,11 +277,11 @@ impl Triangle {
         let bcp = Triangle::cross_product_sign(bc, bp);
         let cap = Triangle::cross_product_sign(ca, cp);
 
-        ((abp >= 0.) & (bcp >= 0.) & (cap >= 0.)) | ((abp <= 0.) & (bcp <= 0.) & (cap <= 0.))
+        ((abp >= 0) & (bcp >= 0) & (cap >= 0)) | ((abp <= 0) & (bcp <= 0) & (cap <= 0))
     }
 
     /// Since this only work with 2d plane, we only need the third component of the cross product
-    fn cross_product_sign(p1: Position<f64>, p2: Position<f64>) -> f64 {
+    fn cross_product_sign(p1: Position<i64>, p2: Position<i64>) -> i64 {
         (p1.x * p2.y) - (p2.x * p1.y)
     }
 }
