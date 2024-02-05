@@ -4,28 +4,28 @@ use crate::{color::Color, Drawable, Position, Size};
 // TODO: Deal with entities that fall completely or partially outside the canvas
 
 pub struct Rectangle {
-    pub center: Position,
+    pub center: Position<i32>,
     pub size: Size,
     pub color: Color,
 }
 
 pub struct Circle {
-    pub center: Position,
+    pub center: Position<i32>,
     pub radius: i32,
     pub color: Color,
 }
 
 pub struct Line {
-    pub start: Position,
-    pub end: Position,
+    pub start: Position<i32>,
+    pub end: Position<i32>,
     pub color: Color,
     pub width: i32,
 }
 
 pub struct Triangle {
-    pub p1: Position,
-    pub p2: Position,
-    pub p3: Position,
+    pub p1: Position<i32>,
+    pub p2: Position<i32>,
+    pub p3: Position<i32>,
     pub color: Color,
 }
 
@@ -50,7 +50,7 @@ impl Circle {
     /// <https://github.com/tsoding/olive.c/blob/master/olive.c#L524-L548>.
     /// See the video <https://www.youtube.com/watch?v=SoaXLQh3UQo> to understand how it was
     /// developed.
-    fn color_at(&self, pos: Position) -> Option<Color> {
+    fn color_at(&self, pos: Position<i32>) -> Option<Color> {
         let aa = 2;
         let w = aa + 1;
 
@@ -202,7 +202,6 @@ impl Drawable for Line {
 }
 
 impl Drawable for Triangle {
-    // TODO: Add anti-aliasing
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
         let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
         let x_end = self.p1.x.max(self.p2.x).max(self.p3.x);
@@ -211,8 +210,9 @@ impl Drawable for Triangle {
 
         for x in x_start..=x_end {
             for y in y_start..=y_end {
-                if self.is_point_inside(Position { x, y }) {
-                    buffer[canvas_size.position_to_index(Position { x, y })] += self.color
+                let position = Position { x, y };
+                if let Some(color) = self.color_at(position) {
+                    buffer[canvas_size.position_to_index(position)] += color
                 }
             }
         }
@@ -220,27 +220,67 @@ impl Drawable for Triangle {
 }
 
 impl Triangle {
+    fn color_at(&self, p: Position<i32>) -> Option<Color> {
+        let aa = 2;
+        let pad = 1. / (aa as f64 + 1.);
+
+        let mut subpixel_count = 0;
+
+        for sxo in 1..=aa {
+            for syo in 1..=aa {
+                let p = Position {
+                    x: p.x as f64 + pad * sxo as f64,
+                    y: p.y as f64 + pad * syo as f64,
+                };
+
+                if self.is_point_inside(p) {
+                    subpixel_count += 1;
+                }
+            }
+        }
+
+        if subpixel_count == 0 {
+            return None;
+        }
+
+        let alpha = (self.color.a as i64 * subpixel_count / (aa * aa)) as u8;
+
+        Some(self.color.with_alpha(alpha))
+    }
     /// Check if a given point is inside the triangle.
     /// Reference: <https://math.stackexchange.com/a/51328>
-    fn is_point_inside(&self, p: Position) -> bool {
-        let ab = self.p1 - self.p2;
-        let ap = self.p1 - p;
+    fn is_point_inside(&self, p: Position<f64>) -> bool {
+        // We add 0.5 to calculate from the center of the pixel
+        let p1 = Position {
+            x: self.p1.x as f64 + 0.5,
+            y: self.p1.y as f64 + 0.5,
+        };
+        let p2 = Position {
+            x: self.p2.x as f64 + 0.5,
+            y: self.p2.y as f64 + 0.5,
+        };
+        let p3 = Position {
+            x: self.p3.x as f64 + 0.5,
+            y: self.p3.y as f64 + 0.5,
+        };
+        let ab = p1 - p2;
+        let ap = p1 - p;
 
-        let bc = self.p2 - self.p3;
-        let bp = self.p2 - p;
+        let bc = p2 - p3;
+        let bp = p2 - p;
 
-        let ca = self.p3 - self.p1;
-        let cp = self.p3 - p;
+        let ca = p3 - p1;
+        let cp = p3 - p;
 
         let abp = Triangle::cross_product_sign(ab, ap);
         let bcp = Triangle::cross_product_sign(bc, bp);
         let cap = Triangle::cross_product_sign(ca, cp);
 
-        ((abp >= 0) & (bcp >= 0) & (cap >= 0)) | ((abp <= 0) & (bcp <= 0) & (cap <= 0))
+        ((abp >= 0.) & (bcp >= 0.) & (cap >= 0.)) | ((abp <= 0.) & (bcp <= 0.) & (cap <= 0.))
     }
 
     /// Since this only work with 2d plane, we only need the third component of the cross product
-    fn cross_product_sign(p1: Position, p2: Position) -> i32 {
+    fn cross_product_sign(p1: Position<f64>, p2: Position<f64>) -> f64 {
         (p1.x * p2.y) - (p2.x * p1.y)
     }
 }
