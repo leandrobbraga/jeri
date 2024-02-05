@@ -1,6 +1,5 @@
 use crate::{color::Color, Drawable, Position, Size};
 
-// TODO: Add triangle
 // TODO: Add text
 // TODO: Deal with entities that fall completely or partially outside the canvas
 
@@ -21,6 +20,13 @@ pub struct Line {
     pub end: Position,
     pub color: Color,
     pub width: i32,
+}
+
+pub struct Triangle {
+    pub p1: Position,
+    pub p2: Position,
+    pub p3: Position,
+    pub color: Color,
 }
 
 impl Drawable for Rectangle {
@@ -192,5 +198,49 @@ impl Drawable for Line {
                 })] += self.color.with_alpha(alpha);
             }
         }
+    }
+}
+
+impl Drawable for Triangle {
+    // TODO: Add anti-aliasing
+    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+        let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
+        let x_end = self.p1.x.max(self.p2.x).max(self.p3.x);
+        let y_start = self.p1.y.min(self.p2.y).min(self.p3.y);
+        let y_end = self.p1.y.max(self.p2.y).max(self.p3.y);
+
+        for x in x_start..=x_end {
+            for y in y_start..=y_end {
+                if self.is_point_inside(Position { x, y }) {
+                    buffer[canvas_size.position_to_index(Position { x, y })] += self.color
+                }
+            }
+        }
+    }
+}
+
+impl Triangle {
+    /// Check if a given point is inside the triangle.
+    /// Reference: <https://math.stackexchange.com/a/51328>
+    fn is_point_inside(&self, p: Position) -> bool {
+        let ab = self.p1 - self.p2;
+        let ap = self.p1 - p;
+
+        let bc = self.p2 - self.p3;
+        let bp = self.p2 - p;
+
+        let ca = self.p3 - self.p1;
+        let cp = self.p3 - p;
+
+        let abp = Triangle::cross_product_sign(ab, ap);
+        let bcp = Triangle::cross_product_sign(bc, bp);
+        let cap = Triangle::cross_product_sign(ca, cp);
+
+        ((abp >= 0) & (bcp >= 0) & (cap >= 0)) | ((abp <= 0) & (bcp <= 0) & (cap <= 0))
+    }
+
+    /// Since this only work with 2d plane, we only need the third component of the cross product
+    fn cross_product_sign(p1: Position, p2: Position) -> i32 {
+        (p1.x * p2.y) - (p2.x * p1.y)
     }
 }

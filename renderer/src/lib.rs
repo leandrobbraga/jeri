@@ -1,7 +1,10 @@
 pub mod color;
 pub mod entities;
 
-use std::{fmt::Debug, ops::Mul};
+use std::{
+    fmt::Debug,
+    ops::{Mul, Sub},
+};
 
 use crate::color::Color;
 
@@ -40,6 +43,17 @@ pub struct Position {
 impl Position {
     pub fn new(x: i32, y: i32) -> Position {
         Position { x, y }
+    }
+}
+
+impl Sub<Position> for Position {
+    type Output = Position;
+
+    fn sub(self, rhs: Position) -> Self::Output {
+        Position {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
     }
 }
 

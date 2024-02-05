@@ -1,7 +1,7 @@
 use png;
 
 use renderer::color::Color;
-use renderer::entities::{Circle, Line, Rectangle};
+use renderer::entities::{Circle, Line, Rectangle, Triangle};
 use renderer::{Canvas, Position, Size};
 
 use std::fs::File;
@@ -240,4 +240,23 @@ pub fn clear_buffer() {
     canvas.clear_buffer();
 
     evaluate_test_case(&canvas, "clear_buffer")
+}
+
+#[test]
+pub fn triangle() {
+    let mut canvas = Canvas::with_size(Size {
+        width: 100,
+        height: 100,
+    });
+
+    let triangle = Triangle {
+        p1: Position { x: 10, y: 10 },
+        p2: Position { x: 95, y: 45 },
+        p3: Position { x: 50, y: 10 },
+        color: Color::WHITE,
+    };
+
+    canvas.render(&[triangle]);
+
+    evaluate_test_case(&canvas, "triangle")
 }
