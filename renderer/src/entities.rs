@@ -27,9 +27,7 @@ impl Drawable for Rectangle {
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
         for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
-                let position = Position { x, y };
-
-                buffer[canvas_size.position_to_index(&position)] += self.color
+                buffer[canvas_size.position_to_index(Position { x, y })] += self.color
             }
         }
     }
@@ -46,7 +44,7 @@ impl Circle {
     /// <https://github.com/tsoding/olive.c/blob/master/olive.c#L524-L548>.
     /// See the video <https://www.youtube.com/watch?v=SoaXLQh3UQo> to understand how it was
     /// developed.
-    fn color_at(&self, pos: &Position) -> Option<Color> {
+    fn color_at(&self, pos: Position) -> Option<Color> {
         let aa = 2;
         let w = aa + 1;
 
@@ -89,8 +87,8 @@ impl Drawable for Circle {
             for y in self.center.y - self.radius..=self.center.y + self.radius {
                 let position = Position { x, y };
 
-                if let Some(color) = self.color_at(&position) {
-                    buffer[canvas_size.position_to_index(&position)] += color
+                if let Some(color) = self.color_at(position) {
+                    buffer[canvas_size.position_to_index(position)] += color
                 }
             }
         }
@@ -132,12 +130,10 @@ impl Drawable for Line {
                 //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
                 //        (width/2+1..width/2+1).
                 for width_offset in -self.width / 2..=self.width / 2 {
-                    buffer[canvas_size.position_to_index(
-                        &(Position {
-                            x,
-                            y: y + width_offset,
-                        }),
-                    )] += self.color;
+                    buffer[canvas_size.position_to_index(Position {
+                        x,
+                        y: y + width_offset,
+                    })] += self.color;
                 }
 
                 // An 'y' that landed in a '.5' means that it's dead center on the pixel, so all the
@@ -147,12 +143,10 @@ impl Drawable for Line {
                 let aa_alpha_percentage = f64::abs(fract - 0.5);
                 let offset_signal = if fract > 0.5 { 1 } else { -1 };
                 let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
-                buffer[canvas_size.position_to_index(
-                    &(Position {
-                        x,
-                        y: y + offset_signal * (1 + self.width / 2),
-                    }),
-                )] += self.color.with_alpha(alpha);
+                buffer[canvas_size.position_to_index(Position {
+                    x,
+                    y: y + offset_signal * (1 + self.width / 2),
+                })] += self.color.with_alpha(alpha);
             }
         } else {
             // The line equation is 'x = slope*y + intercept'
@@ -179,12 +173,10 @@ impl Drawable for Line {
                 //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
                 //        (width/2+1..width/2+1).
                 for width_offset in -self.width / 2..=self.width / 2 {
-                    buffer[canvas_size.position_to_index(
-                        &(Position {
-                            x: x + width_offset,
-                            y,
-                        }),
-                    )] += self.color;
+                    buffer[canvas_size.position_to_index(Position {
+                        x: x + width_offset,
+                        y,
+                    })] += self.color;
                 }
 
                 // An 'x' that landed in a '.5' means that it's dead center on the pixel, so all the
@@ -194,12 +186,10 @@ impl Drawable for Line {
                 let aa_alpha_percentage = f64::abs(fract - 0.5);
                 let offset_signal = if fract > 0.5 { 1 } else { -1 };
                 let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
-                buffer[canvas_size.position_to_index(
-                    &(Position {
-                        x: x + offset_signal * (1 + self.width / 2),
-                        y,
-                    }),
-                )] += self.color.with_alpha(alpha);
+                buffer[canvas_size.position_to_index(Position {
+                    x: x + offset_signal * (1 + self.width / 2),
+                    y,
+                })] += self.color.with_alpha(alpha);
             }
         }
     }

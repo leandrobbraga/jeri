@@ -15,7 +15,7 @@ impl Size {
     pub fn new(height: i32, width: i32) -> Size {
         Size { width, height }
     }
-    fn position_to_index(&self, position: &Position) -> usize {
+    fn position_to_index(&self, position: Position) -> usize {
         (position.y * self.width + position.x) as usize
     }
 }
@@ -31,7 +31,7 @@ impl Mul<i32> for Size {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
