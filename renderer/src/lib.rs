@@ -50,6 +50,8 @@ pub trait Drawable {
 #[derive(PartialEq, Eq)]
 pub struct Canvas {
     size: Size,
+    // TODO: Store internally as a 'Vec<u8>' to avoid needing to clone the underlying buffer when
+    //       converting to 'Vec<u8>' to render the image.
     buffer: Vec<Color>,
     pub background_color: Color,
 }

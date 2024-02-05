@@ -98,31 +98,61 @@ impl Drawable for Circle {
 }
 
 impl Drawable for Line {
-    // TODO: Add Anti-aliasing
     // TODO: Render width better, currently we only add width horizontally or vertically, but we
     //       should add it in the normal direction of the line.
+
     fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
-        let dx = self.start.x - self.end.x;
-        let dy = self.start.y - self.end.y;
+        let dx = (self.start.x - self.end.x) as f64;
+        let dy = (self.start.y - self.end.y) as f64;
 
         // We render in the longest direction to have a better resolution, since the amount of steps
         // is determined by one chosen axis.
-        if i32::abs(dx) >= i32::abs(dy) {
+        if f64::abs(dx) >= f64::abs(dy) {
             // The line equation is 'y = slope*x + intercept'
-            let slope = dy as f64 / dx as f64;
+            let slope = dy / dx;
             let intercept = self.start.y as f64 - self.start.x as f64 * slope;
 
             let start = self.start.x.min(self.end.x);
             let end = self.start.x.max(self.end.x);
 
             for x in start..=end {
-                let y = f64::round(slope * x as f64 + intercept) as i32;
+                // Center of the pixel x
+                let cpx = x as f64 + 0.5;
+                let y = slope * cpx + intercept;
 
-                for offset in -self.width..=self.width {
-                    let position = Position { x, y: y + offset };
+                // The 'y', after flooring, is the main pixel that we're painting. The fraction
+                // determines the opacity of the neighboor pixel for anti-aliasing
+                let fract = y.fract();
+                let y = y.floor() as i32;
 
-                    buffer[canvas_size.position_to_index(&position)] = self.color
+                // We add some width in the 'y-axis', centered in the 'yth' pixel
+                // FIXME: This algorithm adds an extra pixel. For example, if the user asks for
+                //        width=2 it will run from (-1..=1) which are 3 pixels wide instead of 2.
+                //        It was done like that to cleanly add the anti-aliasing pixel later due
+                //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
+                //        (width/2+1..width/2+1).
+                for width_offset in -self.width / 2..=self.width / 2 {
+                    buffer[canvas_size.position_to_index(
+                        &(Position {
+                            x,
+                            y: y + width_offset,
+                        }),
+                    )] += self.color;
                 }
+
+                // An 'y' that landed in a '.5' means that it's dead center on the pixel, so all the
+                // opacity should to go the main pixel, any difference in the fraction will go to
+                // the AA pixel
+                // TODO: The closest pixel to the AA-pixel should have the complementary opacity
+                let aa_alpha_percentage = f64::abs(fract - 0.5);
+                let offset_signal = if fract > 0.5 { 1 } else { -1 };
+                let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
+                buffer[canvas_size.position_to_index(
+                    &(Position {
+                        x,
+                        y: y + offset_signal * (1 + self.width / 2),
+                    }),
+                )] += self.color.with_alpha(alpha);
             }
         } else {
             // The line equation is 'x = slope*y + intercept'
@@ -133,13 +163,43 @@ impl Drawable for Line {
             let end = self.start.y.max(self.end.y);
 
             for y in start..=end {
-                let x = f64::round(slope * y as f64 + intercept) as i32;
+                // Center of the pixel x
+                let cpy = y as f64 + 0.5;
+                let x = slope * cpy + intercept;
 
-                for offset in -self.width..=self.width {
-                    let position = Position { x: x + offset, y };
+                // The 'x', after flooring, is the main pixel that we're painting. The fraction
+                // determines the opacity of the neighboor pixel for anti-aliasing
+                let fract = x.fract();
+                let x = x.floor() as i32;
 
-                    buffer[canvas_size.position_to_index(&position)] = self.color
+                // We add some width in the 'x-axis', centered in the 'xth' pixel
+                // FIXME: This algorithm adds an extra pixel. For example, if the user asks for
+                //        width=2 it will run from (-1..=1) which are 3 pixels wide instead of 2.
+                //        It was done like that to cleanly add the anti-aliasing pixel later due
+                //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
+                //        (width/2+1..width/2+1).
+                for width_offset in -self.width / 2..=self.width / 2 {
+                    buffer[canvas_size.position_to_index(
+                        &(Position {
+                            x: x + width_offset,
+                            y,
+                        }),
+                    )] += self.color;
                 }
+
+                // An 'x' that landed in a '.5' means that it's dead center on the pixel, so all the
+                // opacity should to go the main pixel, any difference in the fraction will go to
+                // the AA pixel
+                // TODO: The closest pixel to the AA-pixel should have the complementary opacity
+                let aa_alpha_percentage = f64::abs(fract - 0.5);
+                let offset_signal = if fract > 0.5 { 1 } else { -1 };
+                let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
+                buffer[canvas_size.position_to_index(
+                    &(Position {
+                        x: x + offset_signal * (1 + self.width / 2),
+                        y,
+                    }),
+                )] += self.color.with_alpha(alpha);
             }
         }
     }
