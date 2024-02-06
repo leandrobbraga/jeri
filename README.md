@@ -1,4 +1,4 @@
-# Renderer
+# Jeri
 
 This is a streamlined graphics library designed for rendering basic shapes such as triangles,
 rectangles, circles, and text. It operates without any external dependencies.

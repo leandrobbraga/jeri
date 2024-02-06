@@ -1,6 +1,11 @@
-[workspace]
-resolver = "2"
+[package]
+name = "renderer"
+version = "0.1.0"
+edition = "2021"
 
-members = [
-  "renderer"
-]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[dev-dependencies]
+png = "0.17.11"

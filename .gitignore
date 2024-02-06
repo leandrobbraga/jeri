@@ -1,4 +1,4 @@
 /target
 
-renderer/tests/resources/diff/*
-renderer/tests/resources/actual/*
+/tests/resources/diff/*
+/tests/resources/actual/*
