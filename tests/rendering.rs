@@ -1,7 +1,7 @@
 use png;
 
 use renderer::color::Color;
-use renderer::entities::{Circle, Line, Rectangle, Triangle};
+use renderer::entities::{Circle, Line, Rectangle, Text, Triangle};
 use renderer::{Canvas, Position, Size};
 
 use std::fs::File;
@@ -259,4 +259,22 @@ pub fn triangle() {
     canvas.render(&[triangle]);
 
     evaluate_test_case(&canvas, "triangle")
+}
+
+#[test]
+pub fn text() {
+    let mut canvas = Canvas::with_size(Size {
+        width: 200,
+        height: 100,
+    });
+
+    let text = Text {
+        text: "abcdefghijklmnopqrstuvxywz".into(),
+        position: Position { x: 10, y: 10 },
+        color: Color::WHITE,
+    };
+
+    canvas.render(&[text]);
+
+    evaluate_test_case(&canvas, "text")
 }

@@ -102,6 +102,8 @@ impl Canvas {
     }
 
     pub fn render(&mut self, objects: &[impl Drawable]) {
+        // TODO: Instead of iterating over objects, iterate over pixels. Iterating over pixels make
+        //       it easier to create chunks of non-overlapping work to help parallelization.
         for object in objects {
             object.draw(self.buffer.as_mut_slice(), &self.size)
         }
