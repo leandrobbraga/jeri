@@ -264,12 +264,12 @@ pub fn triangle() {
 #[test]
 pub fn text() {
     let mut canvas = Canvas::with_size(Size {
-        width: 200,
+        width: 400,
         height: 100,
     });
 
     let text = Text {
-        text: "abcdefghijklmnopqrstuvxywz".into(),
+        text: r#"abcdefghijklmnopqrstuvxywz"' _.!?,()[]{}1234567890<>-*+=;:|\/"#.into(),
         position: Position { x: 10, y: 10 },
         color: Color::WHITE,
     };

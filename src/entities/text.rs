@@ -1,7 +1,7 @@
 use crate::{color::Color, Drawable, Position};
 
-pub const GLYPH_WIDTH: usize = 5;
-pub const GLYPH_HEIGHT: usize = 6;
+pub const GLYPH_WIDTH: usize = 4;
+pub const GLYPH_HEIGHT: usize = 9;
 
 pub struct Text {
     pub text: String,
@@ -24,7 +24,8 @@ impl Drawable for Text {
             for x in 0..GLYPH_WIDTH {
                 for y in 0..GLYPH_HEIGHT {
                     if glyph[Text::index_from_position(Position { x, y })] == 1 {
-                        let buffer_x = self.position.x + (index * GLYPH_WIDTH) as i32 + x as i32;
+                        let buffer_x =
+                            self.position.x + (index * (GLYPH_WIDTH + 1)) as i32 + x as i32;
                         let buffer_y = self.position.y + y as i32;
 
                         buffer[canvas_size.position_to_index(Position {
@@ -41,6 +42,9 @@ impl Drawable for Text {
 // TODO: Finish the GLYPHS table
 
 // ASCII TABLE
+// FIXME: Some glyphs are not representable in the current glyph size (9x4)
+//        1. Ideally the width should be odd, so it's possible to have symetrical 'i', '!', etc.
+//        2. There are some glyphs that have too much detail 'm', 'w'
 #[rustfmt::skip]
 pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack this further with 1 bit per pixel
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Null character
@@ -79,21 +83,101 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
     // ----------- Printable Characters -----------
     // ============================================
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Space
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Exclamation mark
+    [
+        0, 1, 0, 0, 
+        0, 1, 0, 0, 
+        0, 1, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Exclamation mark
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Double quotes (or speech marks)
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Number sign
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Dollar
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Per cent sign
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Ampersand
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Single quote
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Open parenthesis (or open bracket)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Close parenthesis (or close bracket)
+    [
+        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Open parenthesis (or open bracket)
+    [
+        0, 0, 1, 0, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Open parenthesis (or open bracket)
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Asterisk
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Plus
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Comma
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Hyphen-minus
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Period, dot or full stop
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Slash or divide
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 1, 0, 0, 
+        1, 1, 1, 0, 
+        0, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Plus
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Comma
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Hyphen-minus
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Period, dot or full stop 
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 1, 
+        0, 0, 1, 0, 
+        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Slash or divide
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Zero
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // One
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Two
@@ -106,10 +190,50 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Nine
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Colon
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Semicolon
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Less than (or open angled bracket)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Equals
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Greater than (or close angled bracket)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Question mark
+    [
+        0, 0, 0, 0, 
+        0, 0, 1, 0, 
+        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Less than (or open angled bracket)
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 1, 1, 0, 
+        0, 0, 0, 0, 
+        1, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Equals
+    [
+        0, 0, 0, 0, 
+        1, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 1, 0, 
+        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Greater than (or close angled bracket)
+    [
+        0, 1, 1, 0, 
+        1, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Question mark
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // At sign
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase A
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase B
@@ -137,47 +261,320 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase X
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase Y
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase Z
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Opening bracket
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Backslash
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Closing bracket
+    [
+        1, 1, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 1, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Opening bracket
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 0, 0, 0, 
+        0, 1, 0, 0, 
+        0, 0, 1, 0, 
+        0, 0, 0, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Backslash
+    [
+        0, 0, 1, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Closing bracket
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Caret - circumflex
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Underscore
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 1, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Underscore
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Grave accent
     [
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
+        0, 0, 0, 0, 
+        0, 1, 1, 0, 
+        0, 0, 0, 1, 
+        0, 1, 1, 1, 
+        1, 0, 0, 1, 
+        0, 1, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
     ], // Lowercase a
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase b
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase c
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase d
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase e
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase f
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase g
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase h
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase i
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase j
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase k
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase l
+    [
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 1, 1, 0, 
+        1, 0, 0, 1, 
+        1, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase b
+    [
+        0, 0, 0, 0, 
+        0, 1, 1, 0, 
+        1, 0, 0, 1, 
+        1, 0, 0, 0, 
+        1, 0, 0, 1, 
+        0, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase c
+    [
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 1, 1, 1, 
+        1, 0, 0, 1, 
+        0, 1, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase d
+    [
+        0, 0, 0, 0,
+        0, 1, 1, 0,
+        1, 0, 0, 1,
+        1, 1, 1, 1,
+        1, 0, 0, 0,
+        0, 1, 1, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase e
+    [
+        0, 0, 1, 1,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        1, 1, 1, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase f
+    [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 1, 1, 1,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 1, 1, 1,
+        0, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+    ], // Lowercase g
+    [
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 1, 1, 0,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase h
+    [
+        0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase i
+    [
+        0, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 0,
+        0, 1, 1, 0,
+        0, 0, 1, 0,
+        0, 0, 1, 0,
+        0, 0, 1, 0,
+        0, 0, 1, 0,
+        1, 1, 0, 0,
+    ], // Lowercase j
+    [
+        0, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 1, 0,
+        1, 1, 0, 0,
+        1, 0, 1, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase k
+    [
+        1, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 1, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase l
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase m
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase n
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase o
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase p
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase q
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase r
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase s
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase t
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase u
+    [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        1, 0, 1, 0,
+        0, 1, 0, 1,
+        0, 1, 0, 1,
+        0, 1, 0, 1,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase n
+    [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 1, 1, 0,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        0, 1, 1, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Lowercase o
+    [
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 1, 1, 0,
+        1, 0, 0, 1,
+        1, 0, 0, 1,
+        1, 1, 1, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+    ], // Lowercase p
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 1, 1, 1, 
+        1, 0, 0, 1, 
+        1, 0, 0, 1, 
+        0, 1, 1, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+    ], // Lowercase q
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 0, 1, 1, 
+        1, 1, 0, 1, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase r
+    [
+        0, 0, 0, 0, 
+        0, 1, 1, 1, 
+        1, 0, 0, 0, 
+        0, 1, 1, 0, 
+        0, 0, 0, 1, 
+        1, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase s
+    [
+        0, 1, 0, 0, 
+        0, 1, 0, 0, 
+        1, 1, 1, 0, 
+        0, 1, 0, 0, 
+        0, 1, 0, 0, 
+        0, 1, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase t
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 0, 0, 1, 
+        1, 0, 0, 1, 
+        1, 0, 0, 1, 
+        0, 1, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase u
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase v
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase w
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase x
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase y
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase z
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 0, 1, 0, 
+        0, 1, 0, 0, 
+        1, 0, 1, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase x
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 0, 0, 1, 
+        1, 0, 0, 1, 
+        1, 0, 0, 1, 
+        0, 1, 1, 1, 
+        0, 0, 0, 1, 
+        0, 0, 0, 1, 
+        0, 1, 1, 1, 
+    ], // Lowercase y
+    [
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        1, 1, 1, 1, 
+        0, 0, 1, 0, 
+        0, 1, 0, 0, 
+        1, 1, 1, 1, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+        0, 0, 0, 0, 
+    ], // Lowercase z
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Opening brace
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Vertical bar
+    [
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    ], // Vertical bar
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Closing brace
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Equivalency sign - tilde
     [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Delete
