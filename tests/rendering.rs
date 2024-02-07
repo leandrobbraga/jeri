@@ -269,7 +269,7 @@ pub fn text() {
     });
 
     let text = Text {
-        text: r#"abcdefghijklmnopqrstuvxywz"' _.!?,()[]{}1234567890<>-*+=;:|\/"#.into(),
+        text: r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
         position: Position { x: 10, y: 10 },
         color: Color::WHITE,
     };

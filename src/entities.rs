@@ -3,7 +3,6 @@ mod text;
 use crate::{color::Color, Drawable, Position, Size};
 pub use text::Text;
 
-// TODO: Add text
 // TODO: Deal with entities that fall completely or partially outside the canvas
 
 pub struct Rectangle {
