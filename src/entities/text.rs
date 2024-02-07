@@ -1,7 +1,7 @@
 use crate::{color::Color, Drawable, Position};
 
-pub const GLYPH_WIDTH: usize = 4;
-pub const GLYPH_HEIGHT: usize = 9;
+pub const GLYPH_MAX_WIDTH: usize = 4;
+pub const GLYPH_MAX_HEIGHT: usize = 9;
 
 pub struct Text {
     pub text: String,
@@ -12,20 +12,22 @@ pub struct Text {
 
 impl Text {
     fn index_from_position(p: Position<usize>) -> usize {
-        p.y * GLYPH_WIDTH + p.x
+        p.y * GLYPH_MAX_WIDTH + p.x
     }
 }
 
 impl Drawable for Text {
     fn draw(&self, buffer: &mut [Color], canvas_size: &crate::Size) {
-        for (index, character) in self.text.chars().enumerate() {
-            let glyph = GLYPHS[character as usize];
+        let mut buffer_x = self.position.x;
 
-            for x in 0..GLYPH_WIDTH {
-                for y in 0..GLYPH_HEIGHT {
-                    if glyph[Text::index_from_position(Position { x, y })] == 1 {
-                        let buffer_x =
-                            self.position.x + (index * (GLYPH_WIDTH + 1)) as i32 + x as i32;
+        for character in self.text.chars() {
+            let glyph = GLYPHS[character as usize];
+            let glyph_width = GLYPH_WIDTHS[character as usize];
+
+            for x in 0..glyph_width {
+                buffer_x += 1;
+                for y in 0..GLYPH_MAX_HEIGHT {
+                    if glyph[Text::index_from_position(Position { x: x as usize, y })] == 1 {
                         let buffer_y = self.position.y + y as i32;
 
                         buffer[canvas_size.position_to_index(Position {
@@ -35,6 +37,8 @@ impl Drawable for Text {
                     }
                 }
             }
+
+            buffer_x += 1;
         }
     }
 }
@@ -46,60 +50,60 @@ impl Drawable for Text {
 //        1. Ideally the width should be odd, so it's possible to have symetrical 'i', '!', etc.
 //        2. There are some glyphs that have too much detail 'm', 'w'
 #[rustfmt::skip]
-pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack this further with 1 bit per pixel
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Null character
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Start of Heading
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Start of Text
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // End of Text
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // End of Transmission
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Enquiry
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Acknowledge
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Bell, Alert
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Backspace
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Horizontal Tab
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Line Feed
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Vertical Tabulation
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Form Feed
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Carriage Return
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Shift Out
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Shift In
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Data Link Escape
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Device Control One (XON)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Device Control Two
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Device Control Three (XOFF)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Device Control Four
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Negative Acknowledge
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Synchronous Idle
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // End of Transmission Block
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Cancel
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // End of medium
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Substitute
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Escape
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // File Separator
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Group Separator
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Record Separator
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Unit Separator
+pub const GLYPHS: [[u8; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT]; 128] = [ // We could pack this further with 1 bit per pixel
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Null character
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Start of Heading
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Start of Text
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Text
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Transmission
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Enquiry
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Acknowledge
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Bell, Alert
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Backspace
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Horizontal Tab
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Line Feed
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Vertical Tabulation
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Form Feed
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Carriage Return
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Shift Out
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Shift In
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Data Link Escape
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control One (XON)
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Two
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Three (XOFF)
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Four
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Negative Acknowledge
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Synchronous Idle
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Transmission Block
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Cancel
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of medium
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Substitute
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Escape
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // File Separator
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Group Separator
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Record Separator
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Unit Separator
     // ============================================
     // ----------- Printable Characters -----------
     // ============================================
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Space
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Space
     [
-        0, 1, 0, 0, 
-        0, 1, 0, 0, 
-        0, 1, 0, 0, 
-        0, 1, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
+        1, 0, 0, 0, 
         0, 0, 0, 0, 
-        0, 1, 0, 0, 
+        1, 0, 0, 0, 
         0, 0, 0, 0, 
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Exclamation mark
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Double quotes (or speech marks)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Number sign
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Dollar
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Per cent sign
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Ampersand
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Single quote
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Double quotes (or speech marks)
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Number sign
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Dollar
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Per cent sign
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Ampersand
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Single quote
     [
         0, 1, 0, 0, 
         1, 0, 0, 0, 
@@ -112,17 +116,17 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
     ], // Open parenthesis (or open bracket)
     [
-        0, 0, 1, 0, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 1, 0, 
-        0, 0, 0, 0, 
-        0, 0, 0, 0, 
-        0, 0, 0, 0, 
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        0, 1, 0, 0,
+        1, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
     ], // Open parenthesis (or open bracket)
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Asterisk
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Asterisk
     [
         0, 0, 0, 0, 
         0, 0, 0, 0, 
@@ -162,7 +166,7 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
         0, 0, 0, 0, 
-        0, 1, 0, 0, 
+        1, 0, 0, 0, 
         0, 0, 0, 0, 
         0, 0, 0, 0, 
         0, 0, 0, 0, 
@@ -178,18 +182,18 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Slash or divide
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Zero
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // One
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Two
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Three
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Four
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Five
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Six
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Seven
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Eight
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Nine
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Colon
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Semicolon
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Zero
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // One
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Two
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Three
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Four
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Five
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Six
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Seven
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Eight
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Nine
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Colon
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Semicolon
     [
         0, 0, 0, 0, 
         0, 0, 1, 0, 
@@ -234,33 +238,33 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Question mark
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // At sign
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase A
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase B
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase C
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase D
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase E
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase F
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase G
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase H
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase I
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase J
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase K
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase L
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase M
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase N
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase O
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase P
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase Q
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase R
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase S
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase T
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase U
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase V
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase W
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase X
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase Y
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Uppercase Z
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // At sign
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase A
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase B
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase C
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase D
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase E
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase F
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase G
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase H
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase I
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase J
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase K
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase L
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase M
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase N
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase O
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase P
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Q
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase R
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase S
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase T
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase U
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase V
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase W
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase X
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Y
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Z
     [
         1, 1, 0, 0, 
         1, 0, 0, 0, 
@@ -284,17 +288,17 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
     ], // Backslash
     [
-        0, 0, 1, 1, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 0, 1, 
-        0, 0, 1, 1, 
-        0, 0, 0, 0, 
-        0, 0, 0, 0, 
-        0, 0, 0, 0, 
+         1, 1, 0, 0, 
+         0, 1, 0, 0, 
+         0, 1, 0, 0, 
+         0, 1, 0, 0, 
+         0, 1, 0, 0, 
+         1, 1, 0, 0, 
+         0, 0, 0, 0, 
+         0, 0, 0, 0, 
+         0, 0, 0, 0, 
     ], // Closing bracket
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Caret - circumflex
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Caret - circumflex
     [
         0, 0, 0, 0, 
         0, 0, 0, 0, 
@@ -306,7 +310,7 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Underscore
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Grave accent
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Grave accent
     [
         0, 0, 0, 0, 
         0, 1, 1, 0, 
@@ -397,11 +401,11 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
     ], // Lowercase h
     [
         0, 0, 0, 0,
-        0, 1, 0, 0,
+        1, 0, 0, 0,
         0, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -439,7 +443,7 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0,
         0, 0, 0, 0,
     ], // Lowercase l
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase m
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Lowercase m
     [
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -528,8 +532,8 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Lowercase u
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase v
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Lowercase w
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Lowercase v
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Lowercase w
     [
         0, 0, 0, 0, 
         0, 0, 0, 0, 
@@ -563,19 +567,154 @@ pub const GLYPHS: [[u8; GLYPH_WIDTH * GLYPH_HEIGHT]; 128] = [ // We could pack t
         0, 0, 0, 0, 
         0, 0, 0, 0, 
     ], // Lowercase z
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Opening brace
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Opening brace
     [
-        0, 1, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
-        0, 1, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
     ], // Vertical bar
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Closing brace
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Equivalency sign - tilde
-    [0; GLYPH_WIDTH * GLYPH_HEIGHT], // Delete
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Closing brace
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Equivalency sign - tilde
+    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Delete
+];
+
+#[rustfmt::skip]
+pub const GLYPH_WIDTHS: [u8;  128] = [ // We could pack this further with 1 bit per pixel
+    0, // Null character
+    0, // Start of Heading
+    0, // Start of Text
+    0, // End of Text
+    0, // End of Transmission
+    0, // Enquiry
+    0, // Acknowledge
+    0, // Bell, Alert
+    0, // Backspace
+    0, // Horizontal Tab
+    0, // Line Feed
+    0, // Vertical Tabulation
+    0, // Form Feed
+    0, // Carriage Return
+    0, // Shift Out
+    0, // Shift In
+    0, // Data Link Escape
+    0, // Device Control One (XON)
+    0, // Device Control Two
+    0, // Device Control Three (XOFF)
+    0, // Device Control Four
+    0, // Negative Acknowledge
+    0, // Synchronous Idle
+    0, // End of Transmission Block
+    0, // Cancel
+    0, // End of medium
+    0, // Substitute
+    0, // Escape
+    0, // File Separator
+    0, // Group Separator
+    0, // Record Separator
+    0, // Unit Separator
+    // ============================================
+    // ----------- Printable Characters -----------
+    // ============================================
+    4, // Space
+    1, // Exclamation mark
+    0, // Double quotes (or speech marks)
+    0, // Number sign
+    0, // Dollar
+    0, // Per cent sign
+    0, // Ampersand
+    0, // Single quote
+    2, // Open parenthesis (or open bracket)
+    2, // Open parenthesis (or open bracket)
+    0, // Asterisk
+    3, // Plus
+    2, // Comma
+    3, // Hyphen-minus
+    1, // Period, dot or full stop 
+    4, // Slash or divide
+    0, // Zero
+    0, // One
+    0, // Two
+    0, // Three
+    0, // Four
+    0, // Five
+    0, // Six
+    0, // Seven
+    0, // Eight
+    0, // Nine
+    0, // Colon
+    0, // Semicolon
+    3, // Less than (or open angled bracket)
+    3, // Equals
+    3, // Greater than (or close angled bracket)
+    4, // Question mark
+    0, // At sign
+    0, // Uppercase A
+    0, // Uppercase B
+    0, // Uppercase C
+    0, // Uppercase D
+    0, // Uppercase E
+    0, // Uppercase F
+    0, // Uppercase G
+    0, // Uppercase H
+    0, // Uppercase I
+    0, // Uppercase J
+    0, // Uppercase K
+    0, // Uppercase L
+    0, // Uppercase M
+    0, // Uppercase N
+    0, // Uppercase O
+    0, // Uppercase P
+    0, // Uppercase Q
+    0, // Uppercase R
+    0, // Uppercase S
+    0, // Uppercase T
+    0, // Uppercase U
+    0, // Uppercase V
+    0, // Uppercase W
+    0, // Uppercase X
+    0, // Uppercase Y
+    0, // Uppercase Z
+    2, // Opening bracket
+    4, // Backslash
+    2, // Closing bracket
+    0, // Caret - circumflex
+    4, // Underscore
+    0, // Grave accent
+    4, // Lowercase a
+    4, // Lowercase b
+    4, // Lowercase c
+    4, // Lowercase d
+    4, // Lowercase e
+    4, // Lowercase f
+    4, // Lowercase g
+    4, // Lowercase h
+    1, // Lowercase i
+    3, // Lowercase j
+    3, // Lowercase k
+    3, // Lowercase l
+    0, // Lowercase m
+    4, // Lowercase n
+    4, // Lowercase o
+    4, // Lowercase p
+    4, // Lowercase q
+    4, // Lowercase r
+    4, // Lowercase s
+    3, // Lowercase t
+    4, // Lowercase u
+    0, // Lowercase v
+    0, // Lowercase w
+    3, // Lowercase x
+    4, // Lowercase y
+    4, // Lowercase z
+    0, // Opening brace
+    1, // Vertical bar
+    0, // Closing brace
+    0, // Equivalency sign - tilde
+    0, // Delete
 ];
