@@ -7,7 +7,7 @@ pub struct Text {
     pub text: String,
     pub position: Position<i32>,
     pub color: Color,
-    // TODO : Implement font size
+    pub size: u8,
 }
 
 impl Text {
@@ -18,27 +18,55 @@ impl Text {
 
 impl Drawable for Text {
     fn draw(&self, buffer: &mut [Color], canvas_size: &crate::Size) {
-        let mut buffer_x = self.position.x;
+        // This variable accumulates the width of all the characters that were draw so far, this is
+        // necessary since the characters have variable width and cannot be calculated easily.
+        let mut width_acc = 0;
 
         for character in self.text.chars() {
             let glyph = GLYPHS[character as usize];
             let glyph_width = GLYPH_WIDTHS[character as usize];
 
-            for x in 0..glyph_width {
-                buffer_x += 1;
-                for y in 0..GLYPH_MAX_HEIGHT {
-                    if glyph[Text::index_from_position(Position { x: x as usize, y })] == 1 {
-                        let buffer_y = self.position.y + y as i32;
+            for gx in 0..glyph_width {
+                for gy in 0..GLYPH_MAX_HEIGHT {
+                    let glyph_position = Text::index_from_position(Position {
+                        x: gx as usize,
+                        y: gy,
+                    });
 
-                        buffer[canvas_size.position_to_index(Position {
-                            x: buffer_x,
-                            y: buffer_y,
-                        })] += self.color
+                    // The glyph is composed by an array of 0s and 1s signalling if this particular
+                    // pixel should or should not be rendered.
+                    if glyph[glyph_position] > 0 {
+                        // Each glyph pixel have a sub-loop to account for the Text size. Meaning
+                        // that a value of '2' would map each single Glyph pixel to a 2x2 pixel
+                        // square in the end canvas.
+                        for x in 0..self.size {
+                            for y in 0..self.size {
+                                {
+                                    // The x/y positions rationale is the following:
+                                    // 1. Account for the text position
+                                    // 2. Account for all the previously drawn characters, it need
+                                    //    to be multiplied by the text size
+                                    // 3. Account for all the previously drawn pixels from the
+                                    //    current character it need to be multiplied by the text
+                                    //    size
+                                    // 4. Account for all the sub-pixels in the current character
+                                    //    pixel
+                                    buffer[canvas_size.position_to_index(Position {
+                                        x: self.position.x
+                                            + self.size as i32 * (width_acc + gx as i32)
+                                            + x as i32,
+                                        y: self.position.y
+                                            + self.size as i32 * gy as i32
+                                            + y as i32,
+                                    })] += self.color
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            buffer_x += 1;
+            width_acc += glyph_width as i32 + 1;
         }
     }
 }
