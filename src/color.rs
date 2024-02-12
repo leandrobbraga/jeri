@@ -13,6 +13,8 @@ pub struct Color {
 }
 
 impl Color {
+    pub const CHANNELS: usize = 4;
+
     pub const BLACK: Color = Color::from_rgba_u32(0x000000FF);
     pub const WHITE: Color = Color::from_rgba_u32(0xFFFFFFFF);
     pub const GRAY: Color = Color::from_rgba_u32(0x181818FF);
@@ -33,6 +35,10 @@ impl Color {
             b: rgba[2],
             a: rgba[3],
         }
+    }
+
+    pub const fn to_rgba_slice(&self) -> [u8; Self::CHANNELS] {
+        [self.r, self.g, self.b, self.a]
     }
 
     pub const fn from_rgba_u32(rgba: u32) -> Self {
@@ -61,16 +67,16 @@ impl Color {
     }
 }
 
-impl AddAssign<Color> for Color {
+impl AddAssign<Color> for &mut [u8; Color::CHANNELS] {
     /// Blends the two color together scaled by the right color alpha channel
     fn add_assign(&mut self, rhs: Color) {
-        let r = (self.r as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
-        let g = (self.g as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
-        let b = (self.b as u32 * (255 - rhs.a as u32) + rhs.b as u32 * rhs.a as u32) / 255;
+        let r = (self[0] as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
+        let g = (self[1] as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
+        let b = (self[2] as u32 * (255 - rhs.a as u32) + rhs.b as u32 * rhs.a as u32) / 255;
 
-        self.r = min(255, r) as u8;
-        self.g = min(255, g) as u8;
-        self.b = min(255, b) as u8;
+        self[0] = min(255, r) as u8;
+        self[1] = min(255, g) as u8;
+        self[2] = min(255, b) as u8;
     }
 }
 

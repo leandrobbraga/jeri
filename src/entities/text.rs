@@ -1,4 +1,4 @@
-use crate::{color::Color, Drawable, Position};
+use crate::{color::Color, Canvas, Drawable, Position};
 
 pub const GLYPH_MAX_WIDTH: usize = 5;
 pub const GLYPH_MAX_HEIGHT: usize = 10;
@@ -17,7 +17,7 @@ impl Text {
 }
 
 impl Drawable for Text {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &crate::Size) {
+    fn draw(&self, canvas: &mut Canvas) {
         // This variable accumulates the width of all the characters that were draw so far, this is
         // necessary since the characters have variable width and cannot be calculated easily.
         let mut width_acc = 0;
@@ -51,14 +51,15 @@ impl Drawable for Text {
                                     //    size
                                     // 4. Account for all the sub-pixels in the current character
                                     //    pixel
-                                    buffer[canvas_size.position_to_index(Position {
+                                    let mut pixel = canvas.get_mut_pixel(Position {
                                         x: self.position.x
                                             + self.size as i32 * (width_acc + gx as i32)
                                             + x as i32,
                                         y: self.position.y
                                             + self.size as i32 * gy as i32
                                             + y as i32,
-                                    })] += self.color
+                                    });
+                                    pixel += self.color
                                 }
                             }
                         }

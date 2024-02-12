@@ -1,6 +1,6 @@
 mod text;
 
-use crate::{color::Color, Drawable, Position, Size};
+use crate::{color::Color, Canvas, Drawable, Position, Size};
 pub use text::Text;
 
 // TODO: Deal with entities that fall completely or partially outside the canvas
@@ -32,10 +32,11 @@ pub struct Triangle {
 }
 
 impl Drawable for Rectangle {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+    fn draw(&self, canvas: &mut Canvas) {
         for x in self.center.x - self.size.width / 2..=self.center.x + self.size.width / 2 {
             for y in self.center.y - self.size.height / 2..=self.center.y + self.size.height / 2 {
-                buffer[canvas_size.position_to_index(Position { x, y })] += self.color
+                let mut pixel = canvas.get_mut_pixel(Position { x, y });
+                pixel += self.color
             }
         }
     }
@@ -89,14 +90,15 @@ impl Circle {
 }
 
 impl Drawable for Circle {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+    fn draw(&self, canvas: &mut Canvas) {
         // The loops reduce the "search area" to a square that inscribes the circle
         for x in self.center.x - self.radius..=self.center.x + self.radius {
             for y in self.center.y - self.radius..=self.center.y + self.radius {
                 let position = Position { x, y };
 
                 if let Some(color) = self.color_at(position) {
-                    buffer[canvas_size.position_to_index(position)] += color
+                    let mut pixel = canvas.get_mut_pixel(position);
+                    pixel += color
                 }
             }
         }
@@ -107,7 +109,7 @@ impl Drawable for Line {
     // TODO: Render width better, currently we only add width horizontally or vertically, but we
     //       should add it in the normal direction of the line.
 
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+    fn draw(&self, canvas: &mut Canvas) {
         let dx = (self.start.x - self.end.x) as f64;
         let dy = (self.start.y - self.end.y) as f64;
 
@@ -138,10 +140,11 @@ impl Drawable for Line {
                 //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
                 //        (width/2+1..width/2+1).
                 for width_offset in -self.width / 2..=self.width / 2 {
-                    buffer[canvas_size.position_to_index(Position {
+                    let mut pixel = canvas.get_mut_pixel(Position {
                         x,
                         y: y + width_offset,
-                    })] += self.color;
+                    });
+                    pixel += self.color;
                 }
 
                 // An 'y' that landed in a '.5' means that it's dead center on the pixel, so all the
@@ -151,10 +154,13 @@ impl Drawable for Line {
                 let aa_alpha_percentage = f64::abs(fract - 0.5);
                 let offset_signal = if fract > 0.5 { 1 } else { -1 };
                 let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
-                buffer[canvas_size.position_to_index(Position {
+
+                let mut pixel = canvas.get_mut_pixel(Position {
                     x,
                     y: y + offset_signal * (1 + self.width / 2),
-                })] += self.color.with_alpha(alpha);
+                });
+
+                pixel += self.color.with_alpha(alpha);
             }
         } else {
             // The line equation is 'x = slope*y + intercept'
@@ -181,10 +187,12 @@ impl Drawable for Line {
                 //        to the symmetry. Ideally, this interval should be (-width/2..width/2) or
                 //        (width/2+1..width/2+1).
                 for width_offset in -self.width / 2..=self.width / 2 {
-                    buffer[canvas_size.position_to_index(Position {
+                    let mut pixel = canvas.get_mut_pixel(Position {
                         x: x + width_offset,
                         y,
-                    })] += self.color;
+                    });
+
+                    pixel += self.color;
                 }
 
                 // An 'x' that landed in a '.5' means that it's dead center on the pixel, so all the
@@ -194,17 +202,19 @@ impl Drawable for Line {
                 let aa_alpha_percentage = f64::abs(fract - 0.5);
                 let offset_signal = if fract > 0.5 { 1 } else { -1 };
                 let alpha = (self.color.a as f64 * aa_alpha_percentage) as u8;
-                buffer[canvas_size.position_to_index(Position {
+
+                let mut pixel = canvas.get_mut_pixel(Position {
                     x: x + offset_signal * (1 + self.width / 2),
                     y,
-                })] += self.color.with_alpha(alpha);
+                });
+                pixel += self.color.with_alpha(alpha);
             }
         }
     }
 }
 
 impl Drawable for Triangle {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size) {
+    fn draw(&self, canvas: &mut Canvas) {
         let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
         let x_end = self.p1.x.max(self.p2.x).max(self.p3.x);
         let y_start = self.p1.y.min(self.p2.y).min(self.p3.y);
@@ -214,7 +224,8 @@ impl Drawable for Triangle {
             for y in y_start..=y_end {
                 let position = Position { x, y };
                 if let Some(color) = self.color_at(position) {
-                    buffer[canvas_size.position_to_index(position)] += color
+                    let mut pixel = canvas.get_mut_pixel(position);
+                    pixel += color
                 }
             }
         }

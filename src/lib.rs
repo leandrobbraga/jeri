@@ -1,10 +1,8 @@
 pub mod color;
 pub mod entities;
 
-use std::{
-    fmt::Debug,
-    ops::{Mul, Sub},
-};
+use std::fmt::Debug;
+use std::ops::{Mul, Sub};
 
 use crate::color::Color;
 
@@ -17,9 +15,6 @@ pub struct Size {
 impl Size {
     pub fn new(height: i32, width: i32) -> Size {
         Size { width, height }
-    }
-    fn position_to_index(&self, position: Position<i32>) -> usize {
-        (position.y * self.width + position.x) as usize
     }
 }
 
@@ -61,15 +56,13 @@ where
 }
 
 pub trait Drawable {
-    fn draw(&self, buffer: &mut [Color], canvas_size: &Size);
+    fn draw(&self, canvas: &mut Canvas);
 }
 
 #[derive(PartialEq, Eq)]
 pub struct Canvas {
     size: Size,
-    // TODO: Store internally as a 'Vec<u8>' to avoid needing to clone the underlying buffer when
-    //       converting to 'Vec<u8>' to render the image.
-    buffer: Vec<Color>,
+    buffer: Vec<u8>,
     pub background_color: Color,
 }
 
@@ -79,7 +72,7 @@ impl Canvas {
     const DEFAULT_CANVAS_HEIGHT: i32 = 480;
 
     pub fn with_size(size: Size) -> Self {
-        let buffer_size = size.width * size.height;
+        let buffer_size = Color::CHANNELS as i32 * (size.width * size.height);
 
         let mut canvas = Canvas {
             size,
@@ -94,26 +87,39 @@ impl Canvas {
 
     pub fn resize(&mut self, width: i32, height: i32) {
         self.buffer
-            .resize((width * height) as usize, self.background_color)
+            .resize(Color::CHANNELS * (width * height) as usize, 0);
+        self.clear_buffer();
     }
 
+    pub fn fill_buffer(&mut self, color: Color) {
+        for chunk in self.buffer.chunks_exact_mut(Color::CHANNELS) {
+            chunk.swap_with_slice(color.to_rgba_slice().as_mut_slice())
+        }
+    }
     pub fn clear_buffer(&mut self) {
-        self.buffer.fill(self.background_color);
+        self.fill_buffer(self.background_color)
     }
 
     pub fn render(&mut self, objects: &[impl Drawable]) {
         // TODO: Instead of iterating over objects, iterate over pixels. Iterating over pixels make
         //       it easier to create chunks of non-overlapping work to help parallelization.
         for object in objects {
-            object.draw(self.buffer.as_mut_slice(), &self.size)
+            object.draw(self)
         }
+    }
+
+    pub fn get_mut_pixel(&mut self, position: Position<i32>) -> &mut [u8; Color::CHANNELS] {
+        let index = Color::CHANNELS * (position.y * self.size.width + position.x) as usize;
+        (&mut self.buffer[index..index + Color::CHANNELS])
+            .try_into()
+            .unwrap()
     }
 
     pub fn size_ref(&self) -> &Size {
         &self.size
     }
 
-    pub fn buffer_ref(&self) -> &[Color] {
+    pub fn buffer_ref(&self) -> &[u8] {
         &self.buffer
     }
 }

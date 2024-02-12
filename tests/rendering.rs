@@ -12,7 +12,7 @@ type Result<T> = core::result::Result<T, ()>;
 const ERROR_COLOR: Color = Color::BRIGHT_PINK;
 
 struct Buffer {
-    ibuf: Vec<Color>,
+    ibuf: Vec<u8>,
     height: u32,
     width: u32,
 }
@@ -65,11 +65,6 @@ fn load_buffer_from_png(filepath: &str) -> Result<Buffer> {
     let mut buffer = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut buffer).unwrap();
 
-    let buffer = buffer
-        .chunks_exact(4)
-        .map(|chunk| Color::from_rgba_slice(chunk.try_into().unwrap()))
-        .collect();
-
     return Ok(Buffer {
         ibuf: buffer,
         height: info.height,
@@ -86,13 +81,7 @@ fn save_buffer_to_png(buffer: &Buffer, filepath: &str) {
 
     let mut writer = encoder.write_header().unwrap();
 
-    let data: Vec<u8> = buffer
-        .ibuf
-        .iter()
-        .flat_map(|c| [c.r, c.g, c.b, c.a])
-        .collect();
-
-    writer.write_image_data(&data).unwrap();
+    writer.write_image_data(&buffer.ibuf).unwrap();
 }
 
 fn compute_diff_buffer(lb: &Buffer, rb: &Buffer) -> Buffer {
@@ -101,11 +90,19 @@ fn compute_diff_buffer(lb: &Buffer, rb: &Buffer) -> Buffer {
 
     let mut result = Vec::with_capacity(lb.ibuf.len());
 
-    for (l, r) in lb.ibuf.iter().zip(&rb.ibuf) {
+    for (l, r) in lb
+        .ibuf
+        .chunks_exact(Color::CHANNELS)
+        .zip(rb.ibuf.chunks_exact(Color::CHANNELS))
+    {
         if l == r {
-            result.push(*l);
+            result.extend_from_slice(l);
         } else {
-            result.push(ERROR_COLOR + l.with_alpha(0x99));
+            result.extend_from_slice(
+                (ERROR_COLOR + Color::from_rgba_slice(l.try_into().unwrap()).with_alpha(0x99))
+                    .to_rgba_slice()
+                    .as_slice(),
+            );
         }
     }
 
