@@ -3,6 +3,7 @@ pub mod entities;
 
 use std::fmt::Debug;
 use std::ops::{Mul, Sub};
+use std::slice::ChunksExactMut;
 
 use crate::color::Color;
 
@@ -56,7 +57,7 @@ where
 }
 
 pub trait Drawable {
-    fn draw(&self, canvas: &mut Canvas);
+    fn color_at(&self, position: Position<i32>) -> Option<Color>;
 }
 
 #[derive(PartialEq, Eq)]
@@ -100,11 +101,26 @@ impl Canvas {
         self.fill_buffer(self.background_color)
     }
 
+    fn iter_mut_pixels(&mut self) -> PixelMutIterator {
+        PixelMutIterator {
+            inner_iter: self.buffer.chunks_exact_mut(Color::CHANNELS),
+        }
+    }
+
     pub fn render(&mut self, objects: &[impl Drawable]) {
-        // TODO: Instead of iterating over objects, iterate over pixels. Iterating over pixels make
-        //       it easier to create chunks of non-overlapping work to help parallelization.
-        for object in objects {
-            object.draw(self)
+        // TODO: This process is embarrassingly parallel, we could parallelize it later
+        let width = self.size.width;
+
+        for (index, mut pixel) in self.iter_mut_pixels().enumerate() {
+            let position = Position {
+                x: index as i32 % width,
+                y: index as i32 / width,
+            };
+            for object in objects {
+                if let Some(color) = object.color_at(position) {
+                    pixel += color;
+                }
+            }
         }
     }
 
@@ -153,5 +169,19 @@ impl Default for Canvas {
         canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
 
         canvas
+    }
+}
+
+struct PixelMutIterator<'a> {
+    inner_iter: ChunksExactMut<'a, u8>,
+}
+
+impl<'a> Iterator for PixelMutIterator<'a> {
+    type Item = &'a mut [u8; Color::CHANNELS];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner_iter
+            .next()
+            .map(|pixel| pixel.try_into().unwrap())
     }
 }

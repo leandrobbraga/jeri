@@ -1,4 +1,4 @@
-use crate::{color::Color, Canvas, Drawable, Position};
+use crate::{color::Color, Drawable, Position};
 
 pub const GLYPH_MAX_WIDTH: usize = 5;
 pub const GLYPH_MAX_HEIGHT: usize = 10;
@@ -8,67 +8,71 @@ pub struct Text {
     pub position: Position<i32>,
     pub color: Color,
     pub size: u8,
+    text_width: i32,
 }
 
 impl Text {
-    fn index_from_position(p: Position<usize>) -> usize {
-        p.y * GLYPH_MAX_WIDTH + p.x
+    pub fn new(text: String, position: Position<i32>, color: Color, size: u8) -> Text {
+        let text_width = text
+            .chars()
+            .map(|character| GLYPH_WIDTHS[character as usize] as i32 + 1)
+            .sum();
+
+        Text {
+            text,
+            position,
+            color,
+            size,
+            text_width,
+        }
+    }
+    fn index_from_position(p: Position<i32>) -> usize {
+        (p.y * GLYPH_MAX_WIDTH as i32 + p.x) as usize
     }
 }
 
 impl Drawable for Text {
-    fn draw(&self, canvas: &mut Canvas) {
-        // This variable accumulates the width of all the characters that were draw so far, this is
-        // necessary since the characters have variable width and cannot be calculated easily.
-        let mut width_acc = 0;
+    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+        // Fast path
+        if !((position.x >= self.position.x)
+            & (position.x < self.position.x + (self.size as i32 * self.text_width))
+            & (position.y >= self.position.y)
+            & (position.y < self.position.y + (self.size as i32 * GLYPH_MAX_HEIGHT as i32)))
+        {
+            return None;
+        }
+
+        let mut x = self.position.x;
 
         for character in self.text.chars() {
-            let glyph = GLYPHS[character as usize];
-            let glyph_width = GLYPH_WIDTHS[character as usize];
+            let glyph_width = GLYPH_WIDTHS[character as usize] * self.size;
 
-            for gx in 0..glyph_width {
-                for gy in 0..GLYPH_MAX_HEIGHT {
-                    let glyph_position = Text::index_from_position(Position {
-                        x: gx as usize,
-                        y: gy,
-                    });
+            if (position.x >= x) & (position.x < (x + glyph_width as i32)) {
+                let glyph = GLYPHS[character as usize];
 
-                    // The glyph is composed by an array of 0s and 1s signalling if this particular
-                    // pixel should or should not be rendered.
-                    if glyph[glyph_position] > 0 {
-                        // Each glyph pixel have a sub-loop to account for the Text size. Meaning
-                        // that a value of '2' would map each single Glyph pixel to a 2x2 pixel
-                        // square in the end canvas.
-                        for x in 0..self.size {
-                            for y in 0..self.size {
-                                {
-                                    // The x/y positions rationale is the following:
-                                    // 1. Account for the text position
-                                    // 2. Account for all the previously drawn characters, it need
-                                    //    to be multiplied by the text size
-                                    // 3. Account for all the previously drawn pixels from the
-                                    //    current character it need to be multiplied by the text
-                                    //    size
-                                    // 4. Account for all the sub-pixels in the current character
-                                    //    pixel
-                                    let mut pixel = canvas.get_mut_pixel(Position {
-                                        x: self.position.x
-                                            + self.size as i32 * (width_acc + gx as i32)
-                                            + x as i32,
-                                        y: self.position.y
-                                            + self.size as i32 * gy as i32
-                                            + y as i32,
-                                    });
-                                    pixel += self.color
-                                }
-                            }
-                        }
-                    }
+                let glyph_x = (position.x - x) / self.size as i32;
+                let glyph_y = (position.y - self.position.y) / self.size as i32;
+
+                let glyph_position = Text::index_from_position(Position {
+                    x: glyph_x,
+                    y: glyph_y,
+                });
+
+                // The glyph is composed by an array of 0s and 1s signalling if this particular
+                // pixel should or should not be rendered.
+                if glyph[glyph_position] > 0 {
+                    return Some(self.color);
+                } else {
+                    return None;
                 }
+            } else {
+                // We didn't find the right character yet, so we continue iterating
+                // The 'self.size' accounts for the gap between characters
+                x += glyph_width as i32 + self.size as i32;
             }
-
-            width_acc += glyph_width as i32 + 1;
         }
+
+        None
     }
 }
 

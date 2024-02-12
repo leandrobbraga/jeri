@@ -265,12 +265,12 @@ pub fn text() {
         height: 100,
     });
 
-    let text = Text {
-        text: r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
-        position: Position { x: 10, y: 10 },
-        color: Color::WHITE,
-        size: 2,
-    };
+    let text = Text::new(
+        r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
+        Position { x: 10, y: 10 },
+        Color::WHITE,
+        2,
+    );
 
     canvas.render(&[text]);
 
