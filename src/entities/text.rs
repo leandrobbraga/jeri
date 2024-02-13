@@ -1,6 +1,5 @@
 use crate::{color::Color, Drawable, Position};
 
-pub const GLYPH_MAX_WIDTH: usize = 5;
 pub const GLYPH_MAX_HEIGHT: usize = 10;
 
 pub struct Text {
@@ -26,9 +25,6 @@ impl Text {
             text_width,
         }
     }
-    fn index_from_position(p: Position<i32>) -> usize {
-        (p.y * GLYPH_MAX_WIDTH as i32 + p.x) as usize
-    }
 }
 
 impl Drawable for Text {
@@ -45,30 +41,29 @@ impl Drawable for Text {
         let mut x = self.position.x;
 
         for character in self.text.chars() {
-            let glyph_width = GLYPH_WIDTHS[character as usize] * self.size;
+            let glyph_width = GLYPH_WIDTHS[character as usize];
 
-            if (position.x >= x) & (position.x < (x + glyph_width as i32)) {
+            if (position.x >= x) & (position.x < (x + (glyph_width * self.size) as i32)) {
                 let glyph = GLYPHS[character as usize];
 
                 let glyph_x = (position.x - x) / self.size as i32;
                 let glyph_y = (position.y - self.position.y) / self.size as i32;
 
-                let glyph_position = Text::index_from_position(Position {
-                    x: glyph_x,
-                    y: glyph_y,
-                });
+                // The glyph is composed of an array of bytes, each byte representing a 'line' of 8
+                // pixels.
+                let glyph_line = glyph[glyph_y as usize];
 
-                // The glyph is composed by an array of 0s and 1s signalling if this particular
-                // pixel should or should not be rendered.
-                if glyph[glyph_position] > 0 {
+                // Verify if the bit representing the xth row is set, it need to be done from left
+                // to right since the glyph is indexed from top-left to bottom-right.
+                if ((glyph_line >> (glyph_width - glyph_x as u8 - 1)) & 1) == 1 {
                     return Some(self.color);
                 } else {
                     return None;
                 }
             } else {
                 // We didn't find the right character yet, so we continue iterating
-                // The 'self.size' accounts for the gap between characters
-                x += glyph_width as i32 + self.size as i32;
+                // The '1' accounts for the gap between characters
+                x += (glyph_width as i32 + 1) * self.size as i32;
             }
         }
 
@@ -79,812 +74,810 @@ impl Drawable for Text {
 // TODO: Finish the GLYPHS table
 
 // ASCII TABLE
-// TODO: Compress the glyphs in a single 'u64' value, where each bit is a single pixel in the font.
-//       It might be necessary to have an external tool to encode the data.
 #[rustfmt::skip]
-pub const GLYPHS: [[u8; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT]; 128] = [ // We could pack this further with 1 bit per pixel
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Null character
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Start of Heading
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Start of Text
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Text
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Transmission
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Enquiry
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Acknowledge
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Bell, Alert
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Backspace
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Horizontal Tab
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Line Feed
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Vertical Tabulation
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Form Feed
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Carriage Return
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Shift Out
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Shift In
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Data Link Escape
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control One (XON)
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Two
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Three (XOFF)
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Device Control Four
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Negative Acknowledge
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Synchronous Idle
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of Transmission Block
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Cancel
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // End of medium
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Substitute
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Escape
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // File Separator
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Group Separator
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Record Separator
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Unit Separator
+pub const GLYPHS: [[u8; GLYPH_MAX_HEIGHT]; 128] = [ // We could pack this further with 1 bit per pixel
+    [0; GLYPH_MAX_HEIGHT], // Null character
+    [0; GLYPH_MAX_HEIGHT], // Start of Heading
+    [0; GLYPH_MAX_HEIGHT], // Start of Text
+    [0; GLYPH_MAX_HEIGHT], // End of Text
+    [0; GLYPH_MAX_HEIGHT], // End of Transmission
+    [0; GLYPH_MAX_HEIGHT], // Enquiry
+    [0; GLYPH_MAX_HEIGHT], // Acknowledge
+    [0; GLYPH_MAX_HEIGHT], // Bell, Alert
+    [0; GLYPH_MAX_HEIGHT], // Backspace
+    [0; GLYPH_MAX_HEIGHT], // Horizontal Tab
+    [0; GLYPH_MAX_HEIGHT], // Line Feed
+    [0; GLYPH_MAX_HEIGHT], // Vertical Tabulation
+    [0; GLYPH_MAX_HEIGHT], // Form Feed
+    [0; GLYPH_MAX_HEIGHT], // Carriage Return
+    [0; GLYPH_MAX_HEIGHT], // Shift Out
+    [0; GLYPH_MAX_HEIGHT], // Shift In
+    [0; GLYPH_MAX_HEIGHT], // Data Link Escape
+    [0; GLYPH_MAX_HEIGHT], // Device Control One (XON)
+    [0; GLYPH_MAX_HEIGHT], // Device Control Two
+    [0; GLYPH_MAX_HEIGHT], // Device Control Three (XOFF)
+    [0; GLYPH_MAX_HEIGHT], // Device Control Four
+    [0; GLYPH_MAX_HEIGHT], // Negative Acknowledge
+    [0; GLYPH_MAX_HEIGHT], // Synchronous Idle
+    [0; GLYPH_MAX_HEIGHT], // End of Transmission Block
+    [0; GLYPH_MAX_HEIGHT], // Cancel
+    [0; GLYPH_MAX_HEIGHT], // End of medium
+    [0; GLYPH_MAX_HEIGHT], // Substitute
+    [0; GLYPH_MAX_HEIGHT], // Escape
+    [0; GLYPH_MAX_HEIGHT], // File Separator
+    [0; GLYPH_MAX_HEIGHT], // Group Separator
+    [0; GLYPH_MAX_HEIGHT], // Record Separator
+    [0; GLYPH_MAX_HEIGHT], // Unit Separator
     // ============================================
     // ----------- Printable Characters -----------
     // ============================================
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Space
+    [0; GLYPH_MAX_HEIGHT], // Space
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Exclamation mark
     [
-        0, 0, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000101,
+        0b00000101,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Double quotes (or speech marks)
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Number sign
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Dollar
+    [0; GLYPH_MAX_HEIGHT], // Number sign
+    [0; GLYPH_MAX_HEIGHT], // Dollar
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001001,
+        0b00000010,
+        0b00000100,
+        0b00001001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Per cent sign
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Ampersand
+    [0; GLYPH_MAX_HEIGHT], // Ampersand
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Single quote
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Open parenthesis (or open bracket)
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Open parenthesis (or open bracket)
     [
-        0, 0, 0, 0, 0,
-        1, 0, 1, 0, 1,
-        0, 1, 1, 1, 0,
-        1, 1, 1, 1, 1,
-        0, 1, 1, 1, 0,
-        1, 0, 1, 0, 1,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00010101,
+        0b00001110,
+        0b00011111,
+        0b00001110,
+        0b00010101,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Asterisk
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000010,
+        0b00000111,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Plus
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000000,
+        0b00000000,
     ], // Comma
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Hyphen-minus
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Period, dot or full stop 
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000100,
+        0b00001000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Slash or divide
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000101,
+        0b00000101,
+        0b00000101,
+        0b00000101,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Zero
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000110,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // One
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000101,
+        0b00000001,
+        0b00000010,
+        0b00000100,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Two
     [
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000010,
+        0b00000101,
+        0b00000001,
+        0b00000010,
+        0b00000001,
+        0b00000101,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Three
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000100,
+        0b00000101,
+        0b00000111,
+        0b00000001,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Four
     [
-        0, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000111,
+        0b00000100,
+        0b00000111,
+        0b00000001,
+        0b00000001,
+        0b00000110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Five 5
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000100,
+        0b00000110,
+        0b00000101,
+        0b00000101,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Six
     [
-        0, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000111,
+        0b00000001,
+        0b00000010,
+        0b00000010,
+        0b00000100,
+        0b00000100,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Seven
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000101,
+        0b00000010,
+        0b00000101,
+        0b00000101,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Eight
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000101,
+        0b00000011,
+        0b00000001,
+        0b00000001,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Nine
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Colon
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Colon
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000100,
+        0b00000010,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Less than (or open angled bracket)
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000111,
+        0b00000000,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Equals
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000100,
+        0b00000010,
+        0b00000001,
+        0b00000010,
+        0b00000100,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Greater than (or close angled bracket)
     [
-        0, 0, 0, 0, 0,
-        0, 1, 1, 1, 0, 
-        1, 0, 0, 0, 1, 
-        0, 0, 0, 0, 1, 
-        0, 0, 1, 1, 0, 
-        0, 0, 0, 0, 0, 
-        0, 0, 1, 0, 0, 
-        0, 0, 0, 0, 0, 
-        0, 0, 0, 0, 0, 
-        0, 0, 0, 0, 0, 
+        0b00000000,
+        0b00001110,
+        0b00010001,
+        0b00000001,
+        0b00000110,
+        0b00000000,
+        0b00000100,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Question mark
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // At sign
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase A
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase B
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase C
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase D
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase E
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase F
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase G
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase H
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase I
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase J
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase K
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase L
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase M
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase N
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase O
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase P
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Q
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase R
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase S
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase T
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase U
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase V
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase W
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase X
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Y
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Uppercase Z
+    [0; GLYPH_MAX_HEIGHT], // At sign
+    [0; GLYPH_MAX_HEIGHT], // Uppercase A
+    [0; GLYPH_MAX_HEIGHT], // Uppercase B
+    [0; GLYPH_MAX_HEIGHT], // Uppercase C
+    [0; GLYPH_MAX_HEIGHT], // Uppercase D
+    [0; GLYPH_MAX_HEIGHT], // Uppercase E
+    [0; GLYPH_MAX_HEIGHT], // Uppercase F
+    [0; GLYPH_MAX_HEIGHT], // Uppercase G
+    [0; GLYPH_MAX_HEIGHT], // Uppercase H
+    [0; GLYPH_MAX_HEIGHT], // Uppercase I
+    [0; GLYPH_MAX_HEIGHT], // Uppercase J
+    [0; GLYPH_MAX_HEIGHT], // Uppercase K
+    [0; GLYPH_MAX_HEIGHT], // Uppercase L
+    [0; GLYPH_MAX_HEIGHT], // Uppercase M
+    [0; GLYPH_MAX_HEIGHT], // Uppercase N
+    [0; GLYPH_MAX_HEIGHT], // Uppercase O
+    [0; GLYPH_MAX_HEIGHT], // Uppercase P
+    [0; GLYPH_MAX_HEIGHT], // Uppercase Q
+    [0; GLYPH_MAX_HEIGHT], // Uppercase R
+    [0; GLYPH_MAX_HEIGHT], // Uppercase S
+    [0; GLYPH_MAX_HEIGHT], // Uppercase T
+    [0; GLYPH_MAX_HEIGHT], // Uppercase U
+    [0; GLYPH_MAX_HEIGHT], // Uppercase V
+    [0; GLYPH_MAX_HEIGHT], // Uppercase W
+    [0; GLYPH_MAX_HEIGHT], // Uppercase X
+    [0; GLYPH_MAX_HEIGHT], // Uppercase Y
+    [0; GLYPH_MAX_HEIGHT], // Uppercase Z
     [
-        0, 0, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000011,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Opening bracket
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001000,
+        0b00000100,
+        0b00000010,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Backslash
     [
-        0, 0, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000011,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Closing bracket
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Caret - circumflex
+    [0; GLYPH_MAX_HEIGHT], // Caret - circumflex
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Underscore
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Grave accent
+    [0; GLYPH_MAX_HEIGHT], // Grave accent
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000110,
+        0b00000001,
+        0b00000111,
+        0b00001001,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase a
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00001000,
+        0b00001000,
+        0b00001000,
+        0b00001110,
+        0b00001001,
+        0b00001110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase b
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000110,
+        0b00001001,
+        0b00001000,
+        0b00001001,
+        0b00000110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase c
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000111,
+        0b00001001,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase d
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 1, 1, 1, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000110,
+        0b00001001,
+        0b00001111,
+        0b00001000,
+        0b00000110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase e
     [
-        0, 0, 0, 0, 0,
-        0, 0, 1, 1, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000011,
+        0b00000100,
+        0b00000100,
+        0b00001110,
+        0b00000100,
+        0b00000100,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase f
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000111,
+        0b00001001,
+        0b00001001,
+        0b00000111,
+        0b00000001,
+        0b00001001,
+        0b00000110,
     ], // Lowercase g
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00001000,
+        0b00001000,
+        0b00001000,
+        0b00001110,
+        0b00001001,
+        0b00001001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase h
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase i
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 1, 0, 0,
-        1, 1, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000001,
+        0b00000000,
+        0b00000011,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000110,
     ], // Lowercase j
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        1, 1, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000100,
+        0b00000100,
+        0b00000101,
+        0b00000110,
+        0b00000101,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase k
     [
-        0, 0, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000110,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000010,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase l
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001010,
+        0b00010101,
+        0b00010101,
+        0b00010101,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase m
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 1, 0, 0,
-        0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001010,
+        0b00000101,
+        0b00000101,
+        0b00000101,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase n
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000110,
+        0b00001001,
+        0b00001001,
+        0b00000110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase o
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        1, 1, 1, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000110,
+        0b00001001,
+        0b00001001,
+        0b00001110,
+        0b00001000,
+        0b00001000,
+        0b00001000,
     ], // Lowercase p
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 1, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00000111,
+        0b00001001,
+        0b00001001,
+        0b00000111,
+        0b00000001,
+        0b00000001,
+        0b00000001,
     ], // Lowercase q
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 1, 1, 0,
-        1, 1, 0, 1, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001011,
+        0b00001101,
+        0b00001000,
+        0b00001000,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase r
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 1, 1, 1, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 1, 0,
-        1, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000111,
+        0b00001000,
+        0b00000110,
+        0b00000001,
+        0b00001110,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase s
     [
-        0, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000010,
+        0b00000010,
+        0b00000111,
+        0b00000010,
+        0b00000010,
+        0b00000011,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase t
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001001,
+        0b00001001,
+        0b00001001,
+        0b00000111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase u
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 1,
-        1, 0, 0, 0, 1,
-        0, 1, 0, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00010001,
+        0b00010001,
+        0b00001010,
+        0b00000100,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase v
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00010101,
+        0b00010101,
+        0b00010101,
+        0b00001010,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase w
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 1,
-        0, 1, 0, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 1, 0,
-        1, 0, 0, 0, 1,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00010001,
+        0b00001010,
+        0b00000100,
+        0b00001010,
+        0b00010001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase x
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        1, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 0, 0, 1, 0,
-        0, 1, 1, 1, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001001,
+        0b00001001,
+        0b00001001,
+        0b00000111,
+        0b00000001,
+        0b00000001,
+        0b00000111,
     ], // Lowercase y
     [
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        1, 1, 1, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 1, 1, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000000,
+        0b00000000,
+        0b00001111,
+        0b00000010,
+        0b00000100,
+        0b00001111,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Lowercase z
     [
-        0, 0, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 0, 1, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000010,
+        0b00000010,
+        0b00000110,
+        0b00000010,
+        0b00000010,
+        0b00000001,
+        0b00000000,
+        0b00000000,
     ], // Opening brace
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000001,
+        0b00000000,
+        0b00000000,
+        0b00000000,
     ], // Vertical bar
     [
-        0, 0, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 1, 0, 0,
-        0, 1, 0, 0, 0,
-        0, 1, 0, 0, 0,
-        1, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0,
+        0b00000000,
+        0b00000100,
+        0b00000010,
+        0b00000010,
+        0b00000011,
+        0b00000010,
+        0b00000010,
+        0b00000100,
+        0b00000000,
+        0b00000000,
     ], // Closing brace
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Equivalency sign - tilde
-    [0; GLYPH_MAX_WIDTH * GLYPH_MAX_HEIGHT], // Delete
+    [0; GLYPH_MAX_HEIGHT], // Equivalency sign - tilde
+    [0; GLYPH_MAX_HEIGHT], // Delete
 ];
 
 #[rustfmt::skip]
