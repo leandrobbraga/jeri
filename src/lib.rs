@@ -3,7 +3,6 @@ pub mod entities;
 
 use std::fmt::Debug;
 use std::ops::{Mul, Sub};
-use std::slice::ChunksExactMut;
 
 use crate::color::Color;
 
@@ -56,7 +55,7 @@ where
     }
 }
 
-pub trait Drawable {
+pub trait Drawable: Send + Sync {
     fn color_at(&self, position: Position<i32>) -> Option<Color>;
 }
 
@@ -101,34 +100,50 @@ impl Canvas {
         self.fill_buffer(self.background_color)
     }
 
-    fn iter_mut_pixels(&mut self) -> PixelMutIterator {
-        PixelMutIterator {
-            inner_iter: self.buffer.chunks_exact_mut(Color::CHANNELS),
-        }
-    }
+    pub fn render(&mut self, entities: &[impl Drawable]) {
+        // TODO: Use a ThreadPool instead of spawning new threads everytime the user wants to render
+        //       something.
+        let available_paralellism = std::thread::available_parallelism().unwrap().get();
 
-    pub fn render(&mut self, objects: &[impl Drawable]) {
-        // TODO: This process is embarrassingly parallel, we could parallelize it later
-        let width = self.size.width;
+        // The last thread will potentially receive less work to do if the number of pixels is not
+        // divisible by the number of threads.
+        // FIXME: The threads will be better utilized with the ThreadPool and smaller chunks of work
+        let pixels_per_chunk =
+            f64::ceil((self.size.width * self.size.height) as f64 / available_paralellism as f64)
+                as usize;
 
-        for (index, mut pixel) in self.iter_mut_pixels().enumerate() {
-            let position = Position {
-                x: index as i32 % width,
-                y: index as i32 / width,
-            };
-            for object in objects {
-                if let Some(color) = object.color_at(position) {
-                    pixel += color;
-                }
+        let canvas_width = self.size.width;
+
+        std::thread::scope(|s| {
+            // Each thread will have a screen section assigned to it, the canvas section size is
+            // determined from the number of pixels and the available parallelism on the system.
+            for (chunk_index, pixel_chunk) in self
+                .buffer
+                .chunks_mut(Color::CHANNELS * pixels_per_chunk)
+                .enumerate()
+            {
+                // Each thread will process the whole chunk, pixel by pixel.
+                s.spawn(move || {
+                    for (pixel_index, pixel) in
+                        pixel_chunk.chunks_exact_mut(Color::CHANNELS).enumerate()
+                    {
+                        let mut pixel: &mut [u8; Color::CHANNELS] = pixel.try_into().unwrap();
+                        let position_index = (chunk_index * pixels_per_chunk) + pixel_index;
+
+                        let position = Position {
+                            x: position_index as i32 % canvas_width,
+                            y: position_index as i32 / canvas_width,
+                        };
+
+                        for entity in entities {
+                            if let Some(color) = entity.color_at(position) {
+                                pixel += color;
+                            }
+                        }
+                    }
+                });
             }
-        }
-    }
-
-    pub fn get_mut_pixel(&mut self, position: Position<i32>) -> &mut [u8; Color::CHANNELS] {
-        let index = Color::CHANNELS * (position.y * self.size.width + position.x) as usize;
-        (&mut self.buffer[index..index + Color::CHANNELS])
-            .try_into()
-            .unwrap()
+        });
     }
 
     pub fn size_ref(&self) -> &Size {
@@ -169,19 +184,5 @@ impl Default for Canvas {
         canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
 
         canvas
-    }
-}
-
-struct PixelMutIterator<'a> {
-    inner_iter: ChunksExactMut<'a, u8>,
-}
-
-impl<'a> Iterator for PixelMutIterator<'a> {
-    type Item = &'a mut [u8; Color::CHANNELS];
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner_iter
-            .next()
-            .map(|pixel| pixel.try_into().unwrap())
     }
 }

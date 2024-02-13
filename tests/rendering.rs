@@ -276,3 +276,81 @@ pub fn text() {
 
     evaluate_test_case(&canvas, "text")
 }
+
+#[test]
+pub fn complex_image() {
+    let mut canvas = Canvas::with_size(Size {
+        width: 1920,
+        height: 1080,
+    });
+
+    let text = Text::new(
+        r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
+        Position { x: 10, y: 10 },
+        Color::LIGHT_PINK,
+        2,
+    );
+
+    let circles = vec![
+        Circle {
+            center: Position { x: 1600, y: 60 },
+            radius: 200,
+            color: Color::WHITE,
+        },
+        Circle {
+            center: Position { x: 1500, y: 600 },
+            radius: 250,
+            color: Color::GRAY,
+        },
+        Circle {
+            center: Position { x: 1450, y: 450 },
+            radius: 200,
+            color: Color::BRIGHT_PINK,
+        },
+        Circle {
+            center: Position { x: 1900, y: 900 },
+            radius: 40,
+            color: Color::GREEN,
+        },
+    ];
+    let rectangles = vec![
+        Rectangle {
+            center: Position { x: 100, y: 100 },
+            size: Size {
+                width: 100,
+                height: 60,
+            },
+            color: Color::WHITE,
+        },
+        Rectangle {
+            center: Position { x: 500, y: 500 },
+            size: Size {
+                width: 500,
+                height: 500,
+            },
+            color: Color::GREEN,
+        },
+        Rectangle {
+            center: Position { x: 1000, y: 1000 },
+            size: Size {
+                width: 700,
+                height: 70,
+            },
+            color: Color::GRAY,
+        },
+        Rectangle {
+            center: Position { x: 1500, y: 1000 },
+            size: Size {
+                width: 100,
+                height: 50,
+            },
+            color: Color::BRIGHT_PINK,
+        },
+    ];
+
+    canvas.render(&circles);
+    canvas.render(&rectangles);
+    canvas.render(&[text]);
+
+    evaluate_test_case(&canvas, "complex_image")
+}
