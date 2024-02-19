@@ -1,5 +1,3 @@
-use png;
-
 use renderer::color::Color;
 use renderer::entities::{Circle, Line, Rectangle, Text, Triangle};
 use renderer::{Canvas, Position, Size};

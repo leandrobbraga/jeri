@@ -1,8 +1,11 @@
 pub mod color;
 pub mod entities;
+mod threadpool;
 
 use std::fmt::Debug;
 use std::ops::{Mul, Sub};
+
+use threadpool::ThreadPool;
 
 use crate::color::Color;
 
@@ -15,6 +18,10 @@ pub struct Size {
 impl Size {
     pub fn new(height: i32, width: i32) -> Size {
         Size { width, height }
+    }
+
+    pub fn pixel_count(&self) -> i32 {
+        self.width * self.height
     }
 }
 
@@ -59,12 +66,22 @@ pub trait Drawable: Send + Sync {
     fn color_at(&self, position: Position<i32>) -> Option<Color>;
 }
 
-#[derive(PartialEq, Eq)]
 pub struct Canvas {
     size: Size,
     buffer: Vec<u8>,
     pub background_color: Color,
+    threadpool: ThreadPool,
 }
+
+impl PartialEq for Canvas {
+    fn eq(&self, other: &Self) -> bool {
+        (self.size == other.size)
+            & (self.buffer == other.buffer)
+            & (self.background_color == other.background_color)
+    }
+}
+
+impl Eq for Canvas {}
 
 impl Canvas {
     const DEFAULT_BACKGROUND_COLOR: Color = Color::BLACK;
@@ -73,11 +90,13 @@ impl Canvas {
 
     pub fn with_size(size: Size) -> Self {
         let buffer_size = Color::CHANNELS as i32 * (size.width * size.height);
+        let threadpool = ThreadPool::default();
 
         let mut canvas = Canvas {
             size,
             buffer: Vec::with_capacity(buffer_size as usize),
             background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
+            threadpool,
         };
 
         canvas.resize(size.width, size.height);
@@ -101,29 +120,18 @@ impl Canvas {
     }
 
     pub fn render(&mut self, entities: &[impl Drawable]) {
-        // TODO: Use a ThreadPool instead of spawning new threads everytime the user wants to render
-        //       something.
-        let available_paralellism = std::thread::available_parallelism().unwrap().get();
-
-        // The last thread will potentially receive less work to do if the number of pixels is not
-        // divisible by the number of threads.
-        // FIXME: The threads will be better utilized with the ThreadPool and smaller chunks of work
-        let pixels_per_chunk =
-            f64::ceil((self.size.width * self.size.height) as f64 / available_paralellism as f64)
-                as usize;
-
+        let pixels_per_chunk = self.size.pixel_count() as usize
+            / (std::thread::available_parallelism().unwrap().get() * 5);
         let canvas_width = self.size.width;
 
-        std::thread::scope(|s| {
-            // Each thread will have a screen section assigned to it, the canvas section size is
-            // determined from the number of pixels and the available parallelism on the system.
+        self.threadpool.with_scope(|scope| {
             for (chunk_index, pixel_chunk) in self
                 .buffer
                 .chunks_mut(Color::CHANNELS * pixels_per_chunk)
                 .enumerate()
             {
-                // Each thread will process the whole chunk, pixel by pixel.
-                s.spawn(move || {
+                scope.enqueue_task(move || {
+                    // Each thread will process the whole chunk, pixel by pixel.
                     for (pixel_index, pixel) in
                         pixel_chunk.chunks_exact_mut(Color::CHANNELS).enumerate()
                     {
@@ -141,7 +149,7 @@ impl Canvas {
                             }
                         }
                     }
-                });
+                })
             }
         });
     }
@@ -171,6 +179,7 @@ impl Debug for Canvas {
 impl Default for Canvas {
     fn default() -> Self {
         let buffer_size = Canvas::DEFAULT_CANVAS_WIDTH * Canvas::DEFAULT_CANVAS_HEIGHT;
+        let threadpool = ThreadPool::default();
 
         let mut canvas = Canvas {
             size: Size {
@@ -179,6 +188,7 @@ impl Default for Canvas {
             },
             buffer: Vec::with_capacity(buffer_size as usize),
             background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
+            threadpool,
         };
 
         canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
