@@ -3,10 +3,10 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 
-type Task = Box<dyn FnOnce() -> () + Send + 'static>;
+type Task<'task> = Box<dyn FnOnce() -> () + Send + 'task>;
 
 pub(crate) struct ThreadPool {
-    sender: Sender<Task>,
+    sender: Sender<Task<'static>>,
     state: Arc<ThreadPoolState>,
 }
 
@@ -71,7 +71,7 @@ impl ThreadPool {
         *finished = false;
     }
 
-    fn spawn_worker(receiver: Arc<Mutex<Receiver<Task>>>, state: Arc<ThreadPoolState>) {
+    fn spawn_worker(receiver: Arc<Mutex<Receiver<Task<'static>>>>, state: Arc<ThreadPoolState>) {
         // FIXME: Deal with panics in the worker threads
         std::thread::spawn(move || loop {
             let execute_task = {
@@ -107,12 +107,7 @@ impl<'scope, 'env> Scope<'scope, '_, 'env> {
     {
         // SAFETY: We ensure that all the threads finished executing 'f' before dropping the scope
         //         effectively giving `'scope` lifetime to 'f'.
-        let f = unsafe {
-            std::mem::transmute::<
-                Box<dyn FnOnce() -> () + 'scope + Send>,
-                Box<dyn FnOnce() -> () + 'static + Send>,
-            >(Box::new(f))
-        };
+        let f = unsafe { std::mem::transmute::<Task<'scope>, Task<'static>>(Box::new(f)) };
 
         self.threadpool.state.tasks.fetch_add(1, Ordering::SeqCst);
         self.threadpool.sender.send(f).unwrap();
