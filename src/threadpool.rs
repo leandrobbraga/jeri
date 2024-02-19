@@ -23,7 +23,13 @@ impl Default for ThreadPool {
 }
 
 impl ThreadPool {
+    /// Create a ThreadPool with 'size' workers.
+    ///
+    /// # Panic
+    /// Panics if the user attemps to create it with 0 workers.
     pub(crate) fn new(size: usize) -> Self {
+        assert!(size > 0);
+
         let (sender, receiver) = mpsc::channel();
         let receiver = Arc::new(Mutex::new(receiver));
 
@@ -40,18 +46,14 @@ impl ThreadPool {
         ThreadPool { sender, state }
     }
 
-    pub(crate) fn with_scope<'env, 'pool: 'env, F>(&'pool self, f: F)
+    pub(crate) fn with_scope<'pool, F>(&'pool self, f: F)
     where
-        F: for<'scope> FnOnce(&'scope Scope<'scope, 'pool, 'env>),
+        F: for<'scope> FnOnce(&'scope Scope<'scope, 'pool>),
     {
-        {
-            let scope = Scope {
-                threadpool: self,
-                scope: PhantomData,
-                env: PhantomData,
-            };
-            f(&scope);
-        }
+        f(&Scope {
+            threadpool: self,
+            scope: PhantomData,
+        });
 
         let mut finished = self.state.finished_mutex.lock().unwrap();
 
@@ -74,13 +76,11 @@ impl ThreadPool {
     fn spawn_worker(receiver: Arc<Mutex<Receiver<Task<'static>>>>, state: Arc<ThreadPoolState>) {
         // FIXME: Deal with panics in the worker threads
         std::thread::spawn(move || loop {
-            let execute_task = {
-                let rcvr = receiver.lock().unwrap();
-
-                let Ok(execute_task) = rcvr.recv() else { break };
-
-                execute_task
+            let guard = receiver.lock().unwrap();
+            let Ok(execute_task) = guard.recv() else {
+                break;
             };
+            drop(guard);
 
             execute_task();
 
@@ -88,19 +88,19 @@ impl ThreadPool {
             if state.tasks.fetch_sub(1, Ordering::SeqCst) == 1 {
                 let mut finished = state.finished_mutex.lock().unwrap();
                 *finished = true;
+                drop(finished);
                 state.condvar.notify_one();
             }
         });
     }
 }
 
-pub(crate) struct Scope<'scope, 'pool: 'env, 'env: 'scope> {
+pub(crate) struct Scope<'scope, 'pool: 'scope> {
     threadpool: &'pool ThreadPool,
     scope: PhantomData<&'scope mut &'scope ()>,
-    env: PhantomData<&'env mut &'env ()>,
 }
 
-impl<'scope, 'env> Scope<'scope, '_, 'env> {
+impl<'scope, 'pool> Scope<'scope, 'pool> {
     pub(crate) fn enqueue_task<F>(&'scope self, f: F)
     where
         F: FnOnce() + Send + 'scope,
