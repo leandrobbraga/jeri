@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::panic;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 
@@ -14,6 +15,7 @@ struct ThreadPoolState {
     tasks: AtomicU64,
     condvar: Condvar,
     finished_mutex: Mutex<bool>,
+    panicked: AtomicBool,
 }
 
 impl Default for ThreadPool {
@@ -37,6 +39,7 @@ impl ThreadPool {
             tasks: AtomicU64::new(1),
             condvar: Condvar::new(),
             finished_mutex: Mutex::new(false),
+            panicked: AtomicBool::new(false),
         });
 
         for _ in 0..size {
@@ -46,6 +49,10 @@ impl ThreadPool {
         ThreadPool { sender, state }
     }
 
+    /// Create a scope where it's possible to send tasks to threads without 'static lifetime.
+    ///
+    /// # Panic
+    /// Will panic if any thread panics while executing the task.
     pub(crate) fn with_scope<'pool, F>(&'pool self, f: F)
     where
         F: for<'scope> FnOnce(&'scope Scope<'scope, 'pool>),
@@ -62,10 +69,14 @@ impl ThreadPool {
         //            reach '0' before all tasks were spawned. By considering the scope building
         //            as a task itself we ensure that all tasks were spawned and executed before
         //            dropping the scope.
-        if self.state.tasks.fetch_sub(1, Ordering::SeqCst) > 1 {
+        if self.state.tasks.fetch_sub(1, Ordering::AcqRel) > 1 {
             while !(*finished) {
                 finished = self.state.condvar.wait(finished).unwrap();
             }
+        }
+
+        if self.state.panicked.load(Ordering::Relaxed) {
+            panic!("One thread in the threadpool panicked!")
         }
 
         // Setup for the next scope
@@ -74,21 +85,20 @@ impl ThreadPool {
     }
 
     fn spawn_worker(receiver: Arc<Mutex<Receiver<Task<'static>>>>, state: Arc<ThreadPoolState>) {
-        // FIXME: Deal with panics in the worker threads
         std::thread::spawn(move || loop {
-            let guard = receiver.lock().unwrap();
-            let Ok(execute_task) = guard.recv() else {
+            let Ok(execute_task) = receiver.lock().unwrap().recv() else {
                 break;
             };
-            drop(guard);
 
-            execute_task();
+            // Execute the task
+            if panic::catch_unwind(panic::AssertUnwindSafe(|| execute_task())).is_err() {
+                // Thread panicked while executing the task
+                state.panicked.store(true, Ordering::Relaxed);
+            }
 
             // Signal back if the last task was processed
-            if state.tasks.fetch_sub(1, Ordering::SeqCst) == 1 {
-                let mut finished = state.finished_mutex.lock().unwrap();
-                *finished = true;
-                drop(finished);
+            if state.tasks.fetch_sub(1, Ordering::Release) == 1 {
+                *state.finished_mutex.lock().unwrap() = true;
                 state.condvar.notify_one();
             }
         });
@@ -109,7 +119,7 @@ impl<'scope, 'pool> Scope<'scope, 'pool> {
         //         effectively giving `'scope` lifetime to 'f'.
         let f = unsafe { std::mem::transmute::<Task<'scope>, Task<'static>>(Box::new(f)) };
 
-        self.threadpool.state.tasks.fetch_add(1, Ordering::SeqCst);
+        self.threadpool.state.tasks.fetch_add(1, Ordering::Acquire);
         self.threadpool.sender.send(f).unwrap();
     }
 }
@@ -130,5 +140,13 @@ mod test {
         });
 
         assert_eq!(my_vec, vec![10, 10, 10, 10, 10, 10, 10, 10, 10]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn inner_panic_should_propagate() {
+        let tp = ThreadPool::default();
+
+        tp.with_scope(|scope| scope.enqueue_task(|| panic!()))
     }
 }
