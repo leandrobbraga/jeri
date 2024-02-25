@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::panic;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{self, AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 
@@ -69,8 +69,8 @@ impl ThreadPool {
         //       '0' before all tasks were spawned. By considering the scope building as a task
         //       itself we ensure that all tasks were spawned and executed before dropping the
         //       scope.
-        if self.state.tasks.fetch_sub(1, Ordering::AcqRel) > 1 {
-            let mut finished = self.state.finished_mutex.lock().unwrap();
+        let mut finished = self.state.finished_mutex.lock().unwrap();
+        if self.state.tasks.fetch_sub(1, Ordering::Release) > 1 {
             while !(*finished) {
                 finished = self.state.condvar.wait(finished).unwrap();
             }
@@ -81,8 +81,8 @@ impl ThreadPool {
         }
 
         // Setup for the next scope
-        self.state.tasks.store(1, Ordering::Release);
-        *self.state.finished_mutex.lock().unwrap() = false;
+        self.state.tasks.store(1, Ordering::Relaxed);
+        *finished = false;
     }
 
     fn spawn_worker(receiver: Arc<Mutex<Receiver<Task<'static>>>>, state: Arc<ThreadPoolState>) {
@@ -97,11 +97,19 @@ impl ThreadPool {
                 state.panicked.store(true, Ordering::Release);
             }
 
-            // Signal back if the last task was processed
-            if state.tasks.fetch_sub(1, Ordering::AcqRel) == 1 {
-                *state.finished_mutex.lock().unwrap() = true;
-                state.condvar.notify_one();
+            // If there is still work to do
+            if state.tasks.fetch_sub(1, Ordering::Release) > 1 {
+                continue;
             }
+            // Work is finished, we can signal back
+
+            // This fence make sure other threads see the 'tasks' reaching '0' before the finished
+            // signal is issued, meaning that all the tasks were actually finished. We use a fence
+            // instead of `tasks.fetch_sub(1, Ordering::AcqRel)` to avoid paying the penalty on
+            // every decrement.
+            atomic::fence(Ordering::Acquire);
+            *state.finished_mutex.lock().unwrap() = true;
+            state.condvar.notify_one();
         });
     }
 }
