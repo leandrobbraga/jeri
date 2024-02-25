@@ -57,31 +57,32 @@ impl ThreadPool {
     where
         F: for<'scope> FnOnce(&'scope Scope<'scope, 'pool>),
     {
-        f(&Scope {
+        let scope = &Scope {
             threadpool: self,
             scope: PhantomData,
-        });
+        };
 
-        let mut finished = self.state.finished_mutex.lock().unwrap();
+        f(&scope);
 
         // Verify if all the tasks from the scope has finished
-        // IMPORTANT: The task counter started with '1' to avoid a race condition where the tasks
-        //            reach '0' before all tasks were spawned. By considering the scope building
-        //            as a task itself we ensure that all tasks were spawned and executed before
-        //            dropping the scope.
+        // NOTE: The task counter started with '1' to avoid a race condition where the tasks reach
+        //       '0' before all tasks were spawned. By considering the scope building as a task
+        //       itself we ensure that all tasks were spawned and executed before dropping the
+        //       scope.
         if self.state.tasks.fetch_sub(1, Ordering::AcqRel) > 1 {
+            let mut finished = self.state.finished_mutex.lock().unwrap();
             while !(*finished) {
                 finished = self.state.condvar.wait(finished).unwrap();
             }
         }
 
-        if self.state.panicked.load(Ordering::Relaxed) {
+        if self.state.panicked.load(Ordering::Acquire) {
             panic!("One thread in the threadpool panicked!")
         }
 
         // Setup for the next scope
         self.state.tasks.store(1, Ordering::Release);
-        *finished = false;
+        *self.state.finished_mutex.lock().unwrap() = false;
     }
 
     fn spawn_worker(receiver: Arc<Mutex<Receiver<Task<'static>>>>, state: Arc<ThreadPoolState>) {
@@ -93,11 +94,11 @@ impl ThreadPool {
             // Execute the task
             if panic::catch_unwind(panic::AssertUnwindSafe(|| execute_task())).is_err() {
                 // Thread panicked while executing the task
-                state.panicked.store(true, Ordering::Relaxed);
+                state.panicked.store(true, Ordering::Release);
             }
 
             // Signal back if the last task was processed
-            if state.tasks.fetch_sub(1, Ordering::Release) == 1 {
+            if state.tasks.fetch_sub(1, Ordering::AcqRel) == 1 {
                 *state.finished_mutex.lock().unwrap() = true;
                 state.condvar.notify_one();
             }
@@ -115,8 +116,9 @@ impl<'scope, 'pool> Scope<'scope, 'pool> {
     where
         F: FnOnce() + Send + 'scope,
     {
-        // SAFETY: We ensure that all the threads finished executing 'f' before dropping the scope
-        //         effectively giving `'scope` lifetime to 'f'.
+        // SAFETY: We ensure that the thread finished executing 'f' before dropping the scope
+        //         effectively ensuring 'f' lives at most `'scope` lifetime, even though it's
+        //         `'static`.
         let f = unsafe { std::mem::transmute::<Task<'scope>, Task<'static>>(Box::new(f)) };
 
         self.threadpool.state.tasks.fetch_add(1, Ordering::Acquire);
