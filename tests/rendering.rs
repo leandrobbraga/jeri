@@ -97,7 +97,7 @@ fn compute_diff_buffer(lb: &Buffer, rb: &Buffer) -> Buffer {
             result.extend_from_slice(l);
         } else {
             result.extend_from_slice(
-                (ERROR_COLOR + Color::from_rgba_slice(l.try_into().unwrap()).with_alpha(0x99))
+                (ERROR_COLOR + Color::from_rgba_array(l.try_into().unwrap()).with_alpha(0x99))
                     .to_rgba_array()
                     .as_slice(),
             );

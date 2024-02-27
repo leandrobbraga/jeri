@@ -1,8 +1,5 @@
-use std::{
-    cmp::min,
-    fmt::Debug,
-    ops::{Add, AddAssign},
-};
+use std::fmt::Debug;
+use std::ops::{Add, AddAssign};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Color {
@@ -28,7 +25,7 @@ impl Color {
         Color { r, g, b, a }
     }
 
-    pub const fn from_rgba_slice(rgba: [u8; 4]) -> Self {
+    pub const fn from_rgba_array(rgba: [u8; 4]) -> Self {
         Color {
             r: rgba[0],
             g: rgba[1],
@@ -67,16 +64,20 @@ impl Color {
     }
 }
 
-impl AddAssign<Color> for &mut [u8; Color::CHANNELS] {
+type ColorBytes = [u8; Color::CHANNELS];
+
+impl AddAssign<Color> for &mut ColorBytes {
     /// Blends the two color together scaled by the right color alpha channel
     fn add_assign(&mut self, rhs: Color) {
         let r = (self[0] as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
         let g = (self[1] as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
         let b = (self[2] as u32 * (255 - rhs.a as u32) + rhs.b as u32 * rhs.a as u32) / 255;
+        let a = u8::max(self[3], rhs.a);
 
-        self[0] = min(255, r) as u8;
-        self[1] = min(255, g) as u8;
-        self[2] = min(255, b) as u8;
+        self[0] = r as u8;
+        self[1] = g as u8;
+        self[2] = b as u8;
+        self[3] = a;
     }
 }
 
@@ -87,12 +88,13 @@ impl Add<Color> for Color {
         let r = (self.r as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
         let g = (self.g as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
         let b = (self.b as u32 * (255 - rhs.a as u32) + rhs.b as u32 * rhs.a as u32) / 255;
+        let a = u8::max(self.a, rhs.a);
 
         Color {
-            r: min(255, r) as u8,
-            g: min(255, g) as u8,
-            b: min(255, b) as u8,
-            a: self.a,
+            r: r as u8,
+            g: g as u8,
+            b: b as u8,
+            a,
         }
     }
 }
