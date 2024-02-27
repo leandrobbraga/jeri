@@ -112,7 +112,7 @@ impl Canvas {
 
     pub fn fill_buffer(&mut self, color: Color) {
         for chunk in self.buffer.chunks_exact_mut(Color::CHANNELS) {
-            chunk.swap_with_slice(color.to_rgba_slice().as_mut_slice())
+            chunk.swap_with_slice(color.to_rgba_array().as_mut_slice())
         }
     }
     pub fn clear_buffer(&mut self) {

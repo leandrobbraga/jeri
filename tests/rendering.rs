@@ -63,11 +63,11 @@ fn load_buffer_from_png(filepath: &str) -> Result<Buffer> {
     let mut buffer = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut buffer).unwrap();
 
-    return Ok(Buffer {
+    Ok(Buffer {
         ibuf: buffer,
         height: info.height,
         width: info.width,
-    });
+    })
 }
 
 fn save_buffer_to_png(buffer: &Buffer, filepath: &str) {
@@ -98,7 +98,7 @@ fn compute_diff_buffer(lb: &Buffer, rb: &Buffer) -> Buffer {
         } else {
             result.extend_from_slice(
                 (ERROR_COLOR + Color::from_rgba_slice(l.try_into().unwrap()).with_alpha(0x99))
-                    .to_rgba_slice()
+                    .to_rgba_array()
                     .as_slice(),
             );
         }

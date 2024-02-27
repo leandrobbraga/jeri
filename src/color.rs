@@ -37,7 +37,7 @@ impl Color {
         }
     }
 
-    pub const fn to_rgba_slice(&self) -> [u8; Self::CHANNELS] {
+    pub const fn to_rgba_array(&self) -> [u8; Self::CHANNELS] {
         [self.r, self.g, self.b, self.a]
     }
 
