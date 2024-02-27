@@ -124,12 +124,12 @@ impl Canvas {
             / (std::thread::available_parallelism().unwrap().get() * 5);
         let canvas_width = self.size.width;
 
+        // Ensure that we have multiple of 64 bytes since it's the size of a cache line to avoid
+        // false sharing. See: https://en.wikipedia.org/wiki/False_sharing
+        let bytes_per_chunk = usize::max(1, 64 * (Color::CHANNELS * pixels_per_chunk) / 64);
+
         self.threadpool.with_scope(|scope| {
-            for (chunk_index, pixel_chunk) in self
-                .buffer
-                .chunks_mut(Color::CHANNELS * pixels_per_chunk)
-                .enumerate()
-            {
+            for (chunk_index, pixel_chunk) in self.buffer.chunks_mut(bytes_per_chunk).enumerate() {
                 scope.enqueue_task(move || {
                     // Each thread will process the whole chunk, pixel by pixel.
                     for (pixel_index, pixel) in
