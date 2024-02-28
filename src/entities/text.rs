@@ -28,6 +28,7 @@ impl Text {
 }
 
 impl Drawable for Text {
+    #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path
         if !((position.x >= self.position.x)

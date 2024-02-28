@@ -68,6 +68,7 @@ type ColorBytes = [u8; Color::CHANNELS];
 
 impl AddAssign<Color> for &mut ColorBytes {
     /// Blends the two color together scaled by the right color alpha channel
+    #[inline(always)]
     fn add_assign(&mut self, rhs: Color) {
         let r = (self[0] as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
         let g = (self[1] as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;
@@ -84,6 +85,7 @@ impl AddAssign<Color> for &mut ColorBytes {
 impl Add<Color> for Color {
     type Output = Color;
 
+    #[inline(always)]
     fn add(self, rhs: Color) -> Self::Output {
         let r = (self.r as u32 * (255 - rhs.a as u32) + rhs.r as u32 * rhs.a as u32) / 255;
         let g = (self.g as u32 * (255 - rhs.a as u32) + rhs.g as u32 * rhs.a as u32) / 255;

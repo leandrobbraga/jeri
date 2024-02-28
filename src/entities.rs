@@ -30,6 +30,7 @@ pub struct Triangle {
 }
 
 impl Drawable for Rectangle {
+    #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         if !((position.x >= self.center.x - self.size.width / 2)
             & (position.x <= self.center.x + self.size.width / 2)
@@ -54,6 +55,7 @@ impl Drawable for Circle {
     /// <https://github.com/tsoding/olive.c/blob/master/olive.c#L524-L548>.
     /// See the video <https://www.youtube.com/watch?v=SoaXLQh3UQo> to understand how it was
     /// developed.
+    #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path, this defines the square that inscribes the circle
         if !((position.x >= self.center.x - self.radius)
@@ -103,6 +105,7 @@ impl Drawable for Line {
     // TODO: Render width better, currently we only add width horizontally or vertically, but we
     //       should add it in the normal direction of the line.
 
+    #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path
         let x_start = self.start.x.min(self.end.x);
@@ -173,6 +176,7 @@ impl Drawable for Line {
 impl Drawable for Triangle {
     // NOTE: This technique obscures the calculation by upscaling the numbers to transform floats
     //       into integers.
+    #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path
         let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
@@ -218,6 +222,7 @@ impl Drawable for Triangle {
 impl Triangle {
     /// Check if a given point is inside the triangle.
     /// Reference: <https://math.stackexchange.com/a/51328>
+    #[inline(always)]
     fn is_point_inside(&self, p: Position<i64>, w: i64) -> bool {
         let p1 = Position {
             x: w * (2 * self.p1.x as i64 + 1),
@@ -248,6 +253,7 @@ impl Triangle {
     }
 
     /// Since this only work with 2d plane, we only need the third component of the cross product
+    #[inline(always)]
     fn cross_product_sign(p1: Position<i64>, p2: Position<i64>) -> i64 {
         (p1.x * p2.y) - (p2.x * p1.y)
     }
