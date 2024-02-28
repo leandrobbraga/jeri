@@ -34,10 +34,10 @@ pub struct Triangle {
 impl Drawable for Rectangle {
     #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
-        if !((position.x >= self.center.x - self.size.width / 2)
-            & (position.x <= self.center.x + self.size.width / 2)
-            & (position.y >= self.center.y - self.size.width / 2)
-            & (position.y <= self.center.y + self.size.width / 2))
+        if !((2 * position.x >= 2 * self.center.x - self.size.width)
+            & (2 * position.x <= 2 * self.center.x + self.size.width)
+            & (2 * position.y >= 2 * self.center.y - self.size.width)
+            & (2 * position.y <= 2 * self.center.y + self.size.width))
         {
             return None;
         }
@@ -60,7 +60,7 @@ impl Drawable for Circle {
     #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         assert!(
-            self.radius < 16384 / (AA_FACTOR + 1),
+            (AA_FACTOR + 1) * self.radius < 16384,
             "The current Circle implementation as a radius limit to avoid integer overflow"
         );
 
@@ -138,7 +138,7 @@ impl Drawable for Line {
 
         // We render in the longest direction to have a better resolution, since the amount of steps
         // is determined by one chosen axis.
-        let distance = if i32::abs(dx) >= i32::abs(dy) {
+        if i32::abs(dx) >= i32::abs(dy) {
             // Fast path, we only need the extra pixels for the extra width, which does not happen
             // in the longer direction
             if (px < x_start) | (px > x_end) {
@@ -146,9 +146,11 @@ impl Drawable for Line {
             }
 
             // The line equation is 'y = slope*x + intercept'
-            let y = (px * dy + dx * self.start.y - dy * self.start.x) / dx;
+            let y = px * dy + dx * self.start.y - dy * self.start.x;
 
-            i32::abs(y - py)
+            if 2 * i32::abs(y - py * dx) > i32::abs(dx) * (self.width + 1) {
+                return None;
+            }
         } else {
             // Fast path, we only need the extra pixels for the extra width, which does not happen
             // in the longer direction
@@ -157,14 +159,12 @@ impl Drawable for Line {
             }
 
             // The line equation is 'x = slope*y + intercept'
-            let x = (py * dx + dy * self.start.x - dx * self.start.y) / dy;
+            let x = py * dx + dy * self.start.x - dx * self.start.y;
 
-            i32::abs(x - px)
+            if 2 * i32::abs(x - px * dy) > i32::abs(dy) * (self.width + 1) {
+                return None;
+            }
         };
-
-        if 2 * distance > self.width + 1 {
-            return None;
-        }
 
         // FIXME: Implement AA
         Some(self.color)
