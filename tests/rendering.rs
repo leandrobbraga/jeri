@@ -282,12 +282,12 @@ pub fn complex_image() {
         height: 1080,
     });
 
-    let text = Text::new(
+    let texts = vec![Text::new(
         r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
         Position { x: 10, y: 10 },
         Color::LIGHT_PINK,
         2,
-    );
+    )];
 
     let circles = vec![
         Circle {
@@ -346,9 +346,53 @@ pub fn complex_image() {
         },
     ];
 
+    let lines = vec![
+        Line {
+            start: Position { x: 50, y: 20 },
+            end: Position { x: 1900, y: 1900 },
+            color: Color::WHITE,
+            width: 10,
+        },
+        Line {
+            start: Position { x: 1400, y: 100 },
+            end: Position { x: 430, y: 430 },
+            color: Color::GREEN,
+            width: 5,
+        },
+        Line {
+            start: Position { x: 100, y: 900 },
+            end: Position { x: 900, y: 900 },
+            color: Color::GRAY,
+            width: 8,
+        },
+    ];
+
+    let triangles = vec![
+        Triangle {
+            p1: Position { x: 1900, y: 50 },
+            p2: Position { x: 1700, y: 400 },
+            p3: Position { x: 1000, y: 100 },
+            color: Color::WHITE,
+        },
+        Triangle {
+            p1: Position { x: 200, y: 1100 },
+            p2: Position { x: 1000, y: 1300 },
+            p3: Position { x: 1200, y: 700 },
+            color: Color::GREEN,
+        },
+        Triangle {
+            p1: Position { x: 100, y: 100 },
+            p2: Position { x: 300, y: 300 },
+            p3: Position { x: 500, y: 700 },
+            color: Color::GREEN,
+        },
+    ];
+
     canvas.render(&circles);
     canvas.render(&rectangles);
-    canvas.render(&[text]);
+    canvas.render(&texts);
+    canvas.render(&lines);
+    canvas.render(&triangles);
 
     evaluate_test_case(&canvas, "complex_image")
 }
