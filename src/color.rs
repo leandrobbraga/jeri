@@ -38,20 +38,22 @@ impl Color {
         [self.r, self.g, self.b, self.a]
     }
 
+    #[allow(clippy::identity_op)]
     pub const fn from_rgba_u32(rgba: u32) -> Self {
         Color {
-            r: ((rgba >> 24) & 0xff) as u8,
-            g: ((rgba >> 16) & 0xff) as u8,
-            b: ((rgba >> 8) & 0xff) as u8,
-            a: ((rgba >> 0) & 0xff) as u8,
+            r: (rgba >> 24) as u8,
+            g: (rgba >> 16) as u8,
+            b: (rgba >> 8) as u8,
+            a: (rgba >> 0) as u8,
         }
     }
 
+    #[allow(clippy::identity_op)]
     pub const fn to_u32(&self) -> u32 {
         ((self.r as u32) << 24)
-            | ((self.g as u32) << 16 as u32)
-            | ((self.b as u32) << 8 as u32)
-            | ((self.a as u32) << 0 as u32)
+            | ((self.g as u32) << 16)
+            | ((self.b as u32) << 8)
+            | ((self.a as u32) << 0)
     }
 
     pub const fn with_alpha(&self, alpha: u8) -> Color {

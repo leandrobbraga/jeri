@@ -4,7 +4,7 @@ use std::sync::atomic::{self, AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::{Arc, Condvar, Mutex};
 
-type Task<'task> = Box<dyn FnOnce() -> () + Send + 'task>;
+type Task<'task> = Box<dyn FnOnce() + Send + 'task>;
 
 pub(crate) struct ThreadPool {
     sender: Sender<Task<'static>>,
@@ -57,7 +57,7 @@ impl ThreadPool {
     where
         F: for<'scope> FnOnce(&'scope Scope<'scope, 'pool>),
     {
-        let scope = &Scope {
+        let scope = Scope {
             threadpool: self,
             scope: PhantomData,
         };
@@ -92,7 +92,7 @@ impl ThreadPool {
             };
 
             // Execute the task
-            if panic::catch_unwind(panic::AssertUnwindSafe(|| execute_task())).is_err() {
+            if panic::catch_unwind(panic::AssertUnwindSafe(execute_task)).is_err() {
                 // Thread panicked while executing the task
                 state.panicked.store(true, Ordering::Release);
             }

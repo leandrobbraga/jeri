@@ -59,6 +59,7 @@ impl Drawable for Circle {
     /// developed.
     #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
+        // FIXME: We could assert this at creation / radius change
         assert!(
             (AA_FACTOR + 1) * self.radius < 16384,
             "The current Circle implementation as a radius limit to avoid integer overflow"
@@ -116,6 +117,7 @@ impl Drawable for Line {
     #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path
+        // FIXME: We could cache this
         let x_start = self.start.x.min(self.end.x);
         let x_end = self.start.x.max(self.end.x);
         let y_start = self.start.y.min(self.end.y);
@@ -130,6 +132,7 @@ impl Drawable for Line {
             return None;
         }
 
+        // FIXME: We could cache this
         let dx = self.start.x - self.end.x;
         let dy = self.start.y - self.end.y;
 
@@ -177,6 +180,7 @@ impl Drawable for Triangle {
     #[inline(always)]
     fn color_at(&self, position: Position<i32>) -> Option<Color> {
         // Fast path
+        // FIXME: We could cache this
         let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
         let x_end = self.p1.x.max(self.p2.x).max(self.p3.x);
         let y_start = self.p1.y.min(self.p2.y).min(self.p3.y);
@@ -194,6 +198,7 @@ impl Drawable for Triangle {
         // 1. Since we're dealing with sub-pixels we also need to use the center of the pixel
         // 'p.x + 0.5' and 'p.y + 0.5'.
         // 2. To keep it as an integer, we multiply it by the scaling factor '2*w'
+        // FIXME: We could cache this
         let p1 = Position {
             x: w * (2 * self.p1.x + 1),
             y: w * (2 * self.p1.y + 1),
