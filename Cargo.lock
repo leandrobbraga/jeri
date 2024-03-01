@@ -49,6 +49,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "jeri"
+version = "0.1.0"
+dependencies = [
+ "png",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -69,13 +76,6 @@ dependencies = [
  "fdeflate",
  "flate2",
  "miniz_oxide",
-]
-
-[[package]]
-name = "renderer"
-version = "0.1.0"
-dependencies = [
- "png",
 ]
 
 [[package]]

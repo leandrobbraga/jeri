@@ -1,6 +1,6 @@
-use renderer::color::Color;
-use renderer::entities::{Circle, Line, Rectangle, Text, Triangle};
-use renderer::{Canvas, Position, Size};
+use jeri::color::Color;
+use jeri::entities::{Circle, Line, Rectangle, Text, Triangle};
+use jeri::{Canvas, Position, Size};
 
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
