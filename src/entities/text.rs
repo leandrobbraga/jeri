@@ -1,6 +1,6 @@
 use crate::{color::Color, Drawable, Position};
 
-pub const GLYPH_MAX_HEIGHT: usize = 10;
+const GLYPH_MAX_HEIGHT: usize = 10;
 
 pub struct Text {
     pub text: String,
@@ -39,33 +39,41 @@ impl Drawable for Text {
             return None;
         }
 
-        let mut x = self.position.x;
+        let mut pixels_until_char = self.position.x;
 
         for character in self.text.chars() {
             let glyph_width = GLYPH_WIDTHS[character as usize];
 
-            if (position.x >= x) & (position.x < (x + (glyph_width * self.size) as i32)) {
-                let glyph = GLYPHS[character as usize];
+            // Scale the width, including the whitespace
+            let scaled_glyph_width = (glyph_width + 1) as i32 * self.size as i32;
 
-                let glyph_x = (position.x - x) / self.size as i32;
-                let glyph_y = (position.y - self.position.y) / self.size as i32;
-
-                // The glyph is composed of an array of bytes, each byte representing a 'line' of 8
-                // pixels.
-                let glyph_line = glyph[glyph_y as usize];
-
-                // Verify if the bit representing the xth row is set, it need to be done from left
-                // to right since the glyph is indexed from top-left to bottom-right.
-                if ((glyph_line >> (glyph_width - glyph_x as u8 - 1)) & 1) == 1 {
-                    return Some(self.color);
-                } else {
-                    return None;
-                }
-            } else {
-                // We didn't find the right character yet, so we continue iterating
-                // The '1' accounts for the gap between characters
-                x += (glyph_width as i32 + 1) * self.size as i32;
+            // Keep iterating if we didn't find the correct character yet
+            if (pixels_until_char + scaled_glyph_width) <= position.x {
+                pixels_until_char += scaled_glyph_width;
+                continue;
             }
+
+            // We found the character, but it might fall in the whitespace
+            if position.x >= pixels_until_char + (glyph_width as i32 * self.size as i32) {
+                return None;
+            }
+
+            let glyph = GLYPHS[character as usize];
+
+            let glyph_x = (position.x - pixels_until_char) / self.size as i32;
+            let glyph_y = (position.y - self.position.y) / self.size as i32;
+
+            // The glyph is composed of an array of bytes, each byte representing a 'line' of 8
+            // pixels.
+            let glyph_line = glyph[glyph_y as usize];
+
+            // Verify if the bit representing the xth row is set, it need to be done from left
+            // to right since the glyph is indexed from top-left to bottom-right.
+            if ((glyph_line >> (glyph_width - glyph_x as u8 - 1)) & 1) != 1 {
+                return None;
+            }
+
+            return Some(self.color);
         }
 
         None
