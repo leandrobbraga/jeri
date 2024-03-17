@@ -396,3 +396,27 @@ pub fn complex_image() {
 
     evaluate_test_case(&canvas, "complex_image")
 }
+
+#[test]
+pub fn resize() {
+    let mut canvas = Canvas::with_size(Size {
+        width: 100,
+        height: 100,
+    });
+
+    canvas.resize(Size {
+        width: 200,
+        height: 200,
+    });
+
+    let triangle = Triangle {
+        p1: Vector2 { x: 10, y: 10 },
+        p2: Vector2 { x: 195, y: 45 },
+        p3: Vector2 { x: 50, y: 150 },
+        color: Color::WHITE,
+    };
+
+    canvas.render(&[triangle]);
+
+    evaluate_test_case(&canvas, "resize")
+}

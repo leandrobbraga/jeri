@@ -9,7 +9,7 @@ use threadpool::ThreadPool;
 
 use crate::color::Color;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Size {
     pub width: i32,
     pub height: i32,
@@ -22,17 +22,6 @@ impl Size {
 
     pub fn pixel_count(&self) -> i32 {
         self.width * self.height
-    }
-}
-
-impl Mul<i32> for Size {
-    type Output = Size;
-
-    fn mul(self, rhs: i32) -> Self::Output {
-        Size {
-            width: self.width * rhs,
-            height: self.height * rhs,
-        }
     }
 }
 
@@ -86,8 +75,8 @@ pub struct Canvas {
 impl PartialEq for Canvas {
     fn eq(&self, other: &Self) -> bool {
         (self.size == other.size)
-            & (self.buffer == other.buffer)
             & (self.background_color == other.background_color)
+            & (self.buffer == other.buffer)
     }
 }
 
@@ -99,24 +88,24 @@ impl Canvas {
     const DEFAULT_CANVAS_HEIGHT: i32 = 480;
 
     pub fn with_size(size: Size) -> Self {
-        let buffer_size = Color::CHANNELS as i32 * (size.width * size.height);
         let threadpool = ThreadPool::default();
 
-        let mut canvas = Canvas {
+        let buffer = Self::DEFAULT_BACKGROUND_COLOR
+            .to_rgba_array()
+            .repeat((size.width * size.height) as usize);
+
+        Canvas {
             size,
-            buffer: Vec::with_capacity(buffer_size as usize),
+            buffer,
             background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
             threadpool,
-        };
-
-        canvas.resize(size.width, size.height);
-
-        canvas
+        }
     }
 
-    pub fn resize(&mut self, width: i32, height: i32) {
+    pub fn resize(&mut self, size: Size) {
         self.buffer
-            .resize(Color::CHANNELS * (width * height) as usize, 0);
+            .resize(Color::CHANNELS * (size.width * size.height) as usize, 0);
+        self.size = size;
         self.clear_buffer();
     }
 
@@ -136,7 +125,7 @@ impl Canvas {
 
         // Ensure that we have multiple of 64 bytes since it's the size of a cache line to avoid
         // false sharing. See: https://en.wikipedia.org/wiki/False_sharing
-        let bytes_per_chunk = usize::max(1, 64 * (Color::CHANNELS * pixels_per_chunk) / 64);
+        let bytes_per_chunk = usize::max(64, 64 * (Color::CHANNELS * pixels_per_chunk) / 64);
 
         self.threadpool.with_scope(|scope| {
             for (chunk_index, pixel_chunk) in self.buffer.chunks_mut(bytes_per_chunk).enumerate() {
@@ -173,36 +162,11 @@ impl Canvas {
     }
 }
 
-impl Debug for Canvas {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for chunk in self.buffer.chunks_exact(self.size.width as usize) {
-            for color in chunk {
-                write!(f, "{:?}", color)?
-            }
-            writeln!(f)?
-        }
-
-        Ok(())
-    }
-}
-
 impl Default for Canvas {
     fn default() -> Self {
-        let buffer_size = Canvas::DEFAULT_CANVAS_WIDTH * Canvas::DEFAULT_CANVAS_HEIGHT;
-        let threadpool = ThreadPool::default();
-
-        let mut canvas = Canvas {
-            size: Size {
-                width: Canvas::DEFAULT_CANVAS_WIDTH,
-                height: Canvas::DEFAULT_CANVAS_HEIGHT,
-            },
-            buffer: Vec::with_capacity(buffer_size as usize),
-            background_color: Canvas::DEFAULT_BACKGROUND_COLOR,
-            threadpool,
-        };
-
-        canvas.resize(Canvas::DEFAULT_CANVAS_WIDTH, Canvas::DEFAULT_CANVAS_HEIGHT);
-
-        canvas
+        Self::with_size(Size {
+            width: Self::DEFAULT_CANVAS_WIDTH,
+            height: Self::DEFAULT_CANVAS_HEIGHT,
+        })
     }
 }
