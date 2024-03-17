@@ -1,6 +1,6 @@
 use jeri::color::Color;
 use jeri::entities::{Circle, Line, Rectangle, Text, Triangle};
-use jeri::{Canvas, Position, Size};
+use jeri::{Canvas, Size, Vector2};
 
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
@@ -119,7 +119,7 @@ fn circle() {
     });
 
     let circle = Circle {
-        center: Position { x: 35, y: 35 },
+        center: Vector2 { x: 35, y: 35 },
         radius: 20,
         color: Color::WHITE,
     };
@@ -137,26 +137,26 @@ fn line() {
     });
 
     let line_1 = Line {
-        end: Position { x: 0, y: 20 },
-        start: Position { x: 25, y: 85 },
+        end: Vector2 { x: 0, y: 20 },
+        start: Vector2 { x: 25, y: 85 },
         color: Color::WHITE,
         width: 2,
     };
     let line_2 = Line {
-        end: Position { x: 70, y: 20 },
-        start: Position { x: 73, y: 85 },
+        end: Vector2 { x: 70, y: 20 },
+        start: Vector2 { x: 73, y: 85 },
         color: Color::WHITE,
         width: 2,
     };
     let vertical_line = Line {
-        end: Position { x: 35, y: 30 },
-        start: Position { x: 35, y: 10 },
+        end: Vector2 { x: 35, y: 30 },
+        start: Vector2 { x: 35, y: 10 },
         color: Color::WHITE,
         width: 2,
     };
     let horizontal_line = Line {
-        end: Position { x: 10, y: 70 },
-        start: Position { x: 40, y: 70 },
+        end: Vector2 { x: 10, y: 70 },
+        start: Vector2 { x: 40, y: 70 },
         color: Color::WHITE,
         width: 2,
     };
@@ -174,7 +174,7 @@ fn rectangle() {
     });
 
     let rectangle = Rectangle {
-        center: Position { x: 40, y: 40 },
+        center: Vector2 { x: 40, y: 40 },
         size: Size {
             width: 30,
             height: 30,
@@ -195,7 +195,7 @@ fn two_objects() {
     });
 
     let rectangle = Rectangle {
-        center: Position { x: 40, y: 40 },
+        center: Vector2 { x: 40, y: 40 },
         size: Size {
             width: 30,
             height: 30,
@@ -204,7 +204,7 @@ fn two_objects() {
     };
 
     let circle = Circle {
-        center: Position { x: 60, y: 60 },
+        center: Vector2 { x: 60, y: 60 },
         radius: 20,
         color: Color::WHITE,
     };
@@ -223,7 +223,7 @@ pub fn clear_buffer() {
     });
 
     let rectangle = Rectangle {
-        center: Position { x: 40, y: 40 },
+        center: Vector2 { x: 40, y: 40 },
         size: Size {
             width: 30,
             height: 30,
@@ -245,9 +245,9 @@ pub fn triangle() {
     });
 
     let triangle = Triangle {
-        p1: Position { x: 10, y: 10 },
-        p2: Position { x: 95, y: 45 },
-        p3: Position { x: 50, y: 10 },
+        p1: Vector2 { x: 10, y: 10 },
+        p2: Vector2 { x: 95, y: 45 },
+        p3: Vector2 { x: 50, y: 10 },
         color: Color::WHITE,
     };
 
@@ -265,7 +265,7 @@ pub fn text() {
 
     let text = Text::new(
         r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
-        Position { x: 10, y: 10 },
+        Vector2 { x: 10, y: 10 },
         Color::WHITE,
         2,
     );
@@ -284,36 +284,36 @@ pub fn complex_image() {
 
     let texts = vec![Text::new(
         r#"abcdefghijklmnopqrstuvwxyz"' _.!?,()[]{}1234567890<>-*+=%;:|\/"#.into(),
-        Position { x: 10, y: 10 },
+        Vector2 { x: 10, y: 10 },
         Color::LIGHT_PINK,
         2,
     )];
 
     let circles = vec![
         Circle {
-            center: Position { x: 1600, y: 60 },
+            center: Vector2 { x: 1600, y: 60 },
             radius: 200,
             color: Color::WHITE,
         },
         Circle {
-            center: Position { x: 1500, y: 600 },
+            center: Vector2 { x: 1500, y: 600 },
             radius: 250,
             color: Color::GRAY,
         },
         Circle {
-            center: Position { x: 1450, y: 450 },
+            center: Vector2 { x: 1450, y: 450 },
             radius: 200,
             color: Color::BRIGHT_PINK,
         },
         Circle {
-            center: Position { x: 1900, y: 900 },
+            center: Vector2 { x: 1900, y: 900 },
             radius: 40,
             color: Color::GREEN,
         },
     ];
     let rectangles = vec![
         Rectangle {
-            center: Position { x: 100, y: 100 },
+            center: Vector2 { x: 100, y: 100 },
             size: Size {
                 width: 100,
                 height: 60,
@@ -321,7 +321,7 @@ pub fn complex_image() {
             color: Color::WHITE,
         },
         Rectangle {
-            center: Position { x: 500, y: 500 },
+            center: Vector2 { x: 500, y: 500 },
             size: Size {
                 width: 500,
                 height: 500,
@@ -329,7 +329,7 @@ pub fn complex_image() {
             color: Color::GREEN,
         },
         Rectangle {
-            center: Position { x: 1000, y: 1000 },
+            center: Vector2 { x: 1000, y: 1000 },
             size: Size {
                 width: 700,
                 height: 70,
@@ -337,7 +337,7 @@ pub fn complex_image() {
             color: Color::GRAY,
         },
         Rectangle {
-            center: Position { x: 1500, y: 1000 },
+            center: Vector2 { x: 1500, y: 1000 },
             size: Size {
                 width: 100,
                 height: 50,
@@ -348,20 +348,20 @@ pub fn complex_image() {
 
     let lines = vec![
         Line {
-            start: Position { x: 50, y: 20 },
-            end: Position { x: 1900, y: 1900 },
+            start: Vector2 { x: 50, y: 20 },
+            end: Vector2 { x: 1900, y: 1900 },
             color: Color::WHITE,
             width: 10,
         },
         Line {
-            start: Position { x: 1400, y: 100 },
-            end: Position { x: 430, y: 430 },
+            start: Vector2 { x: 1400, y: 100 },
+            end: Vector2 { x: 430, y: 430 },
             color: Color::GREEN,
             width: 5,
         },
         Line {
-            start: Position { x: 100, y: 900 },
-            end: Position { x: 900, y: 900 },
+            start: Vector2 { x: 100, y: 900 },
+            end: Vector2 { x: 900, y: 900 },
             color: Color::GRAY,
             width: 8,
         },
@@ -369,21 +369,21 @@ pub fn complex_image() {
 
     let triangles = vec![
         Triangle {
-            p1: Position { x: 1900, y: 50 },
-            p2: Position { x: 1700, y: 400 },
-            p3: Position { x: 1000, y: 100 },
+            p1: Vector2 { x: 1900, y: 50 },
+            p2: Vector2 { x: 1700, y: 400 },
+            p3: Vector2 { x: 1000, y: 100 },
             color: Color::WHITE,
         },
         Triangle {
-            p1: Position { x: 200, y: 1100 },
-            p2: Position { x: 1000, y: 1300 },
-            p3: Position { x: 1200, y: 700 },
+            p1: Vector2 { x: 200, y: 1100 },
+            p2: Vector2 { x: 1000, y: 1300 },
+            p3: Vector2 { x: 1200, y: 700 },
             color: Color::GREEN,
         },
         Triangle {
-            p1: Position { x: 100, y: 100 },
-            p2: Position { x: 300, y: 300 },
-            p3: Position { x: 500, y: 700 },
+            p1: Vector2 { x: 100, y: 100 },
+            p2: Vector2 { x: 300, y: 300 },
+            p3: Vector2 { x: 500, y: 700 },
             color: Color::GREEN,
         },
     ];

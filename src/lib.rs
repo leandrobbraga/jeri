@@ -37,25 +37,35 @@ impl Mul<i32> for Size {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Position<T> {
+pub struct Vector2<T> {
     pub x: T,
     pub y: T,
 }
 
-impl<T> Position<T> {
-    pub fn new(x: T, y: T) -> Position<T> {
-        Position { x, y }
+impl<T> Vector2<T>
+where
+    T: Mul<T, Output = T> + Sub<T, Output = T> + Copy,
+{
+    #[inline(always)]
+    fn cross_product_sign(p1: Vector2<T>, p2: Vector2<T>) -> T {
+        (p1.x * p2.y) - (p2.x * p1.y)
     }
 }
 
-impl<T> Sub<Position<T>> for Position<T>
+impl<T> Vector2<T> {
+    pub fn new(x: T, y: T) -> Vector2<T> {
+        Vector2 { x, y }
+    }
+}
+
+impl<T> Sub<Vector2<T>> for Vector2<T>
 where
     T: Sub<T, Output = T>,
 {
-    type Output = Position<T>;
+    type Output = Vector2<T>;
 
-    fn sub(self, rhs: Position<T>) -> Self::Output {
-        Position {
+    fn sub(self, rhs: Vector2<T>) -> Self::Output {
+        Vector2 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
@@ -63,7 +73,7 @@ where
 }
 
 pub trait Drawable: Send + Sync {
-    fn color_at(&self, position: Position<i32>) -> Option<Color>;
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color>;
 }
 
 pub struct Canvas {
@@ -138,7 +148,7 @@ impl Canvas {
                         let mut pixel: &mut [u8; Color::CHANNELS] = pixel.try_into().unwrap();
                         let position_index = (chunk_index * pixels_per_chunk) + pixel_index;
 
-                        let position = Position {
+                        let position = Vector2 {
                             x: position_index as i32 % canvas_width,
                             y: position_index as i32 / canvas_width,
                         };

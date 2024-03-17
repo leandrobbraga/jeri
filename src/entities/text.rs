@@ -1,17 +1,17 @@
-use crate::{color::Color, Drawable, Position};
+use crate::{color::Color, Drawable, Vector2};
 
 const GLYPH_MAX_HEIGHT: usize = 10;
 
 pub struct Text {
     pub text: String,
-    pub position: Position<i32>,
+    pub position: Vector2<i32>,
     pub color: Color,
     pub size: u8,
     text_width: i32,
 }
 
 impl Text {
-    pub fn new(text: String, position: Position<i32>, color: Color, size: u8) -> Text {
+    pub fn new(text: String, position: Vector2<i32>, color: Color, size: u8) -> Text {
         let text_width = text
             .chars()
             .map(|character| GLYPH_WIDTHS[character as usize] as i32 + 1)
@@ -29,7 +29,7 @@ impl Text {
 
 impl Drawable for Text {
     #[inline(always)]
-    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color> {
         // Fast path
         if !((position.x >= self.position.x)
             & (position.x < self.position.x + (self.size as i32 * self.text_width))

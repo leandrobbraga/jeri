@@ -1,39 +1,39 @@
 mod text;
 
-use crate::{color::Color, Drawable, Position, Size};
+use crate::{color::Color, Drawable, Size, Vector2};
 pub use text::Text;
 
 const AA_FACTOR: i32 = 2;
 
 pub struct Rectangle {
-    pub center: Position<i32>,
+    pub center: Vector2<i32>,
     pub size: Size,
     pub color: Color,
 }
 
 pub struct Circle {
-    pub center: Position<i32>,
+    pub center: Vector2<i32>,
     pub radius: i32,
     pub color: Color,
 }
 
 pub struct Line {
-    pub start: Position<i32>,
-    pub end: Position<i32>,
+    pub start: Vector2<i32>,
+    pub end: Vector2<i32>,
     pub color: Color,
     pub width: i32,
 }
 
 pub struct Triangle {
-    pub p1: Position<i32>,
-    pub p2: Position<i32>,
-    pub p3: Position<i32>,
+    pub p1: Vector2<i32>,
+    pub p2: Vector2<i32>,
+    pub p3: Vector2<i32>,
     pub color: Color,
 }
 
 impl Drawable for Rectangle {
     #[inline(always)]
-    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color> {
         if !((2 * position.x >= 2 * self.center.x - self.size.width)
             & (2 * position.x <= 2 * self.center.x + self.size.width)
             & (2 * position.y >= 2 * self.center.y - self.size.width)
@@ -58,7 +58,7 @@ impl Drawable for Circle {
     /// See the video <https://www.youtube.com/watch?v=SoaXLQh3UQo> to understand how it was
     /// developed.
     #[inline(always)]
-    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color> {
         // FIXME: We could assert this at creation / radius change
         assert!(
             (AA_FACTOR + 1) * self.radius < 16384,
@@ -115,7 +115,7 @@ impl Drawable for Line {
     //       should add it in the normal direction of the line.
 
     #[inline(always)]
-    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color> {
         // Fast path
         // FIXME: We could cache this
         let x_start = self.start.x.min(self.end.x);
@@ -178,7 +178,7 @@ impl Drawable for Triangle {
     // NOTE: This technique obscures the calculation by upscaling the numbers to transform floats
     //       into integers.
     #[inline(always)]
-    fn color_at(&self, position: Position<i32>) -> Option<Color> {
+    fn color_at(&self, position: Vector2<i32>) -> Option<Color> {
         // Fast path
         // FIXME: We could cache this
         let x_start = self.p1.x.min(self.p2.x).min(self.p3.x);
@@ -199,15 +199,15 @@ impl Drawable for Triangle {
         // 'p.x + 0.5' and 'p.y + 0.5'.
         // 2. To keep it as an integer, we multiply it by the scaling factor '2*w'
         // FIXME: We could cache this
-        let p1 = Position {
+        let p1 = Vector2 {
             x: w * (2 * self.p1.x + 1),
             y: w * (2 * self.p1.y + 1),
         };
-        let p2 = Position {
+        let p2 = Vector2 {
             x: w * (2 * self.p2.x + 1),
             y: w * (2 * self.p2.y + 1),
         };
-        let p3 = Position {
+        let p3 = Vector2 {
             x: w * (2 * self.p3.x + 1),
             y: w * (2 * self.p3.y + 1),
         };
@@ -219,7 +219,7 @@ impl Drawable for Triangle {
                 // 1. We divide a pixel in 'aa + 1' parts, meaning that each sub-pixel is
                 //    'p.x + i/(aa+1)' and 'p.y + i/(aa+1)'
                 // 2. To keep it as an integer we multiply by the scaling factor '2*w'
-                let p = Position {
+                let p = Vector2 {
                     x: 2 * (w * position.x + sxo),
                     y: 2 * (w * position.y + syo),
                 };
@@ -246,10 +246,10 @@ impl Triangle {
     #[inline(always)]
     fn is_point_inside(
         &self,
-        p: Position<i32>,
-        p1: Position<i32>,
-        p2: Position<i32>,
-        p3: Position<i32>,
+        p: Vector2<i32>,
+        p1: Vector2<i32>,
+        p2: Vector2<i32>,
+        p3: Vector2<i32>,
     ) -> bool {
         let ab = p1 - p2;
         let ap = p1 - p;
@@ -260,16 +260,10 @@ impl Triangle {
         let ca = p3 - p1;
         let cp = p3 - p;
 
-        let abp = Triangle::cross_product_sign(ab, ap);
-        let bcp = Triangle::cross_product_sign(bc, bp);
-        let cap = Triangle::cross_product_sign(ca, cp);
+        let abp = Vector2::cross_product_sign(ab, ap);
+        let bcp = Vector2::cross_product_sign(bc, bp);
+        let cap = Vector2::cross_product_sign(ca, cp);
 
         ((abp >= 0) & (bcp >= 0) & (cap >= 0)) | ((abp <= 0) & (bcp <= 0) & (cap <= 0))
-    }
-
-    /// Since this only work with 2d plane, we only need the third component of the cross product
-    #[inline(always)]
-    fn cross_product_sign(p1: Position<i32>, p2: Position<i32>) -> i32 {
-        (p1.x * p2.y) - (p2.x * p1.y)
     }
 }
